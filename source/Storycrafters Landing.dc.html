@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>STORYCRAFTERS · Masterclass de storytelling documental | Media Builders</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@200;300;400;500&family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="./image-slot.js"></script>
+<style>
+html{scroll-behavior:smooth}
+body{margin:0;background:#0a0a0a;color:#EFE7DA;font-family:'Archivo',sans-serif;-webkit-font-smoothing:antialiased}
+*{box-sizing:border-box}
+a{color:#F2B33D;text-decoration:none}
+a:hover{color:#FFD27A}
+::selection{background:#F2B33D;color:#0a0a0a}
+</style>
+</helmet>
+
+<div style="position:relative;min-height:100vh;background:#0a0a0a;overflow-x:clip">
+
+<sc-if value="{{ grain }}" hint-placeholder-val="{{ true }}">
+<div style="position:fixed;inset:0;pointer-events:none;z-index:60;opacity:.09;mix-blend-mode:overlay;background-image:url(&quot;data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>&quot;)"></div>
+</sc-if>
+
+<!-- HEADER -->
+<header style="position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:center;justify-content:space-between;gap:24px;padding:14px clamp(16px,4vw,48px);background:rgba(10,10,10,.82);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid rgba(239,231,218,.08)">
+  <a href="#top" style="display:flex;align-items:center;gap:10px;color:#EFE7DA">
+    <span style="width:10px;height:10px;border-radius:50%;background:#F2B33D;box-shadow:0 0 12px #F2B33D"></span>
+    <span style="font-family:'Barlow Condensed',sans-serif;font-size:22px;letter-spacing:.06em">STORYCRAFTERS</span>
+  </a>
+  <sc-if value="{{ isDesktop }}" hint-placeholder-val="{{ true }}">
+    <nav style="display:flex;align-items:center;gap:28px;font-size:14px;font-weight:500;letter-spacing:.02em">
+      <a href="#programa" style="color:#cfcfcf" style-hover="color:#F2B33D">Programa</a>
+      <a href="#expositores" style="color:#cfcfcf" style-hover="color:#F2B33D">Expositores</a>
+      <a href="#agenda" style="color:#cfcfcf" style-hover="color:#F2B33D">Agenda</a>
+      <a href="#incluye" style="color:#cfcfcf" style-hover="color:#F2B33D">Incluye</a>
+      <a href="#preguntas" style="color:#cfcfcf" style-hover="color:#F2B33D">Preguntas</a>
+    </nav>
+  </sc-if>
+  <a href="#inscripcion" style="background:#F2B33D;color:#0a0a0a;font-weight:700;font-size:14px;padding:10px 18px;border-radius:2px;letter-spacing:.02em" style-hover="background:#FFD27A;color:#0a0a0a">Inscribirme</a>
+</header>
+
+<!-- HERO -->
+<section id="top" data-screen-label="Hero" style="position:relative;padding-top:64px;background:#0a0a0a;overflow:hidden">
+  <div aria-hidden="true" style="position:absolute;top:0;left:0;right:0;height:calc(64px + clamp(560px,88vh,920px));background:url('assets/hero-mirada-web.jpg') 62% 40%/cover no-repeat;opacity:1;filter:none;pointer-events:none"></div>
+  <div aria-hidden="true" style="position:absolute;top:0;left:0;right:0;height:calc(64px + clamp(560px,88vh,920px));background:linear-gradient(180deg,rgba(10,10,10,.65) 0%,rgba(10,10,10,.15) 28%,rgba(10,10,10,.2) 55%,rgba(10,10,10,.85) 82%,#0a0a0a 100%),radial-gradient(120% 90% at 50% 40%,transparent 40%,rgba(10,10,10,.6) 100%);pointer-events:none"></div>
+  <div style="position:relative;height:clamp(560px,88vh,920px);overflow:hidden">
+
+    <div style="position:absolute;right:clamp(10px,2.5vw,36px);top:50%;transform:translateY(-50%);writing-mode:vertical-rl;font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.35em;color:#C9A56A;z-index:4">12 · 12 · 2026 — SAN PEDRO SULA</div>
+
+    <div style="position:absolute;top:clamp(24px,5vh,56px);left:clamp(20px,5vw,64px);display:flex;flex-direction:column;align-items:flex-start;gap:12px;z-index:4;text-align:left">
+      <div style="display:flex;align-items:center;gap:12px"><img src="assets/logo-media-builders.png" alt="Media Builders" style="height:26px;width:auto;filter:invert(1);opacity:.95"><span style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:#F2B33D">presenta</span></div>
+      <image-slot id="hero-logo" shape="rect" placeholder="Logo STORYCRAFTERS" style="width:220px;height:64px"></image-slot>
+      <div style="font-size:13px;letter-spacing:.24em;text-transform:uppercase;color:#EFE7DA;font-weight:600">Investiga · Estructura · Graba</div>
+    </div>
+
+    
+
+    <h1 style="position:absolute;left:0;right:0;bottom:-1.2vw;margin:0;text-align:center;font-family:'Barlow Condensed',sans-serif;font-weight:500;font-size:clamp(64px,17vw,300px);line-height:1;color:#F2B33D;letter-spacing:-.005em;transform:perspective(700px) rotateX(16deg) skewX(-7deg);transform-origin:50% 100%;text-shadow:0 18px 40px rgba(0,0,0,.45);z-index:3;white-space:nowrap">STORYCRAFTERS</h1>
+  </div>
+
+  <div style="position:relative;z-index:4;max-width:1240px;margin:0 auto;padding:clamp(36px,6vw,72px) clamp(20px,5vw,48px) clamp(56px,8vw,96px);display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:clamp(32px,5vw,72px);align-items:end">
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <h2 style="margin:0;font-family:'Barlow Condensed',sans-serif;font-weight:300;font-size:clamp(34px,4.6vw,60px);line-height:1.02;text-transform:uppercase;text-wrap:balance">Masterclass intensiva de storytelling documental</h2>
+      <p style="margin:0;font-size:clamp(16px,1.4vw,19px);line-height:1.6;color:#cfcfcf;max-width:560px;text-wrap:pretty">Un día completo para aprender a investigar, estructurar, entrevistar, iluminar y grabar historias reales, junto a cineastas con experiencia internacional y con las manos en el equipo.</p>
+      <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:8px">
+        <a href="#inscripcion" style="background:#F2B33D;color:#0a0a0a;font-weight:700;font-size:16px;padding:16px 28px;border-radius:2px" style-hover="background:#FFD27A;color:#0a0a0a">Reserva tu lugar</a>
+        <a href="#agenda" style="border:1px solid rgba(239,231,218,.35);color:#EFE7DA;font-weight:600;font-size:16px;padding:16px 28px;border-radius:2px" style-hover="border-color:#F2B33D;color:#F2B33D">Ver el programa</a>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:22px">
+      <div style="display:grid;grid-template-columns:auto 1fr;gap:10px 18px;font-size:15px;border-top:1px solid rgba(239,231,218,.15);padding-top:20px">
+        <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#F2B33D;padding-top:3px">FECHA</span><span>Sábado 12 de diciembre de 2026</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#F2B33D;padding-top:3px">HORA</span><span>8:00 a.m. – 6:30 p.m.</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#F2B33D;padding-top:3px">SEDE</span><span>Estudios Alfa y Omega Visión, San Pedro Sula</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#F2B33D;padding-top:3px">CUPO</span><span>Limitado: 40 participantes</span>
+      </div>
+      <sc-if value="{{ showCountdown }}" hint-placeholder-val="{{ true }}">
+        <div style="background:#050505;border:1px solid #2a2a2a;padding:16px 20px;display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.2em;color:#9a9a9a"><span style="color:#E5533D">● REC</span><span>T-MINUS · 12.12.26 08:00</span></div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:clamp(30px,4vw,44px);font-weight:500;color:#F2B33D;letter-spacing:.04em">{{ tc }}</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;color:#9a9a9a;max-width:300px"><span>DÍAS</span><span>HRS</span><span>MIN</span><span>SEG</span></div>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+</section>
+
+<!-- QUÉ ES -->
+<section id="programa" data-screen-label="Qué es" style="padding:clamp(72px,10vw,140px) clamp(20px,5vw,48px);background:#0a0a0a">
+  <div style="max-width:1240px;margin:0 auto;display:flex;flex-direction:column;gap:clamp(40px,6vw,72px)">
+    <div style="display:flex;flex-direction:column;gap:20px;max-width:980px">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.25em;color:#F2B33D">00:01 — QUÉ ES STORYCRAFTERS</div>
+      <h2 style="margin:0;font-family:'Barlow Condensed',sans-serif;font-weight:300;font-size:clamp(40px,6.4vw,96px);line-height:.98;text-transform:uppercase;text-wrap:balance">Las historias reales no se improvisan. <span style="color:#F2B33D">Se construyen.</span></h2>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr));gap:clamp(24px,4vw,56px);font-size:clamp(16px,1.3vw,18px);line-height:1.7;color:#cfcfcf">
+      <p style="margin:0;text-wrap:pretty">STORYCRAFTERS es un programa de formación práctica de Media Builders para quienes cuentan historias con una cámara. En una sola jornada recorrerás el proceso completo de una pieza documental: la investigación previa, el arco narrativo, la entrevista que hace que alguien se abra de verdad y la luz que convierte un espacio cualquiera en una escena de cine.</p>
+      <p style="margin:0;text-wrap:pretty"><strong style="color:#EFE7DA">La mañana es para aprender de quienes lo hacen. La tarde es para hacerlo tú:</strong> iluminarás una entrevista y grabarás una secuencia de B-roll en un set profesional, con equipo de producción real.</p>
+    </div>
+
+    
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:1px;background:#262626;border:1px solid #262626">
+      <div style="background:#0a0a0a;padding:clamp(24px,3vw,36px);display:flex;flex-direction:column;gap:14px">
+        <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#F2B33D;letter-spacing:.2em">01</span>
+        <h3 style="margin:0;font-family:'Barlow Condensed',sans-serif;font-weight:300;font-size:40px;text-transform:uppercase">Aprende</h3>
+        <p style="margin:0;color:#cfcfcf;line-height:1.6">Cinco sesiones con expositores de Honduras, Guatemala y Estados Unidos.</p>
+      </div>
+      <div style="background:#0a0a0a;padding:clamp(24px,3vw,36px);display:flex;flex-direction:column;gap:14px">
+        <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#F2B33D;letter-spacing:.2em">02</span>
+        <h3 style="margin:0;font-family:'Barlow Condensed',sans-serif;font-weight:300;font-size:40px;text-transform:uppercase">Practica</h3>
+        <p style="margin:0;color:#cfcfcf;line-height:1.6">Una tarde completa en set, con cámaras, luces y un monitor grande para ver lo que capta la cámara.</p>
+      </div>
+      <div style="background:#0a0a0a;padding:clamp(24px,3vw,36px);display:flex;flex-direction:column;gap:14px">
+        <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#F2B33D;letter-spacing:.2em">03</span>
+        <h3 style="margin:0;font-family:'Barlow Condensed',sans-serif;font-weight:300;font-size:40px;text-transform:uppercase">Llévatelo</h3>
+        <p style="margin:0;color:#cfcfcf;line-height:1.6">Tus escenas, las fotos del día y un diploma digital de participación.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PARA QUIÉN -->
+<section data-screen-label="Para quién" style="position:relative;overflow:hidden;padding:clamp(72px,10vw,140px) clamp(20px,5vw,48px);background:#121212">
+  <div aria-hidden="true" style="position:absolute;inset:0;background:url('assets/bg-playa-web.jpg') center 40%/cover no-repeat;opacity:.26;filter:grayscale(1) sepia(0);mix-blend-mode:luminosity;pointer-events:none"></div>
+  <div aria-hidden="true" style="position:absolute;inset:0;background:linear-gradient(90deg,#121212 0%,rgba(18,18,18,.55) 55%,rgba(18,18,18,.2) 100%);pointer-events:none"></div>
+  <div style="position:relative;max-width:1240px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:clamp(32px,6vw,96px);align-items:start">
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.25em;color:#F2B33D">00:02 — PARA QUIÉN ES</div>
+      <h2 style="margin:0;font-family:'Barlow Condensed',sans-serif;font-weight:300;font-size:clamp(56px,9vw,140px);line-height:.9;text-transform:uppercase">¿Es para <span style="color:#F2B33D">ti?</span></h2>
+      <div style="margin-top:12px;background:#F2B33D;color:#0a0a0a;padding:20px 24px;font-weight:600;font-size:18px;line-height:1.45;max-width:420px">No necesitas traer cámara. Nosotros ponemos el equipo.</div>
+    </div>
+    <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column">
+      <li style="display:grid;grid-template-columns:48px 1fr;gap:12px;padding:22px 0;border-top:1px solid rgba(239,231,218,.14);font-size:clamp(17px,1.5vw,20px);line-height:1.45"><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#F2B33D;padding-top:5px">A</span><span>Filmmakers y videógrafos que quieren dar el salto a la narrativa documental.</span></li>
+      <li style="display:grid;grid-template-columns:48px 1fr;gap:12px;padding:22px 0;border-top:1px solid rgba(239,231,218,.14);font-size:clamp(17px,1.5vw,20px);line-height:1.45"><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#F2B33D;padding-top:5px">B</span><span>Fotógrafos que quieren contar historias en movimiento.</span></li>
+      <li style="display:grid;grid-template-columns:48px 1fr;gap:12px;padding:22px 0;border-top:1px solid rgba(239,231,218,.14);font-size:clamp(17px,1.5vw,20px);line-height:1.45"><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#F2B33D;padding-top:5px">C</span><span>Creadores de contenido y comunicadores que trabajan con historias reales.</span></li>
+      <li style="display:grid;grid-template-columns:48px 1fr;gap:12px;padding:22px 0;border-top:1px solid rgba(239,231,218,.14);font-size:clamp(17px,1.5vw,20px);line-height:1.45"><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#F2B33D;padding-top:5px">D</span><span>Estudiantes de cine, comunicación y artes visuales.</span></li>
+      <li style="display:grid;grid-template-columns:48px 1fr;gap:12px;padding:22px 0;border-top:1px solid rgba(239,231,218,.14);border-bottom:1px solid rgba(239,231,218,.14);font-size:clamp(17px,1.5vw,20px);line-height:1.45"><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#F2B33D;padding-top:5px">E</span><span>Profesionales de comunicación de organizaciones con propósito social.</span></li>
+    </ul>
+  </div>
+</section>
+
+<!-- EXPOSITORES -->
+<section id="expositores" data-screen-label="Expositores" style="padding:clamp(72px,10vw,140px) clamp(20px,5vw,48px);background:#0a0a0a">
+  <div style="max-width:1240px;margin:0 auto;display:flex;flex-direction:column;gap:clamp(40px,5vw,64px)">
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.25em;color:#F2B33D">00:03 — EXPOSITORES</div>
+      <h2 style="margin:0;font-family:'Barlow Condensed',sans-serif;font-weight:300;font-size:clamp(40px,6.4vw,96px);line-height:.98;text-transform:uppercase">Aprende de quienes <span style="color:#F2B33D">lo hacen</span></h2>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));gap:clamp(20px,2.4vw,32px)">
+      <article style="display:flex;flex-direction:column;gap:16px">
+        <div style="position:relative;aspect-ratio:4/5;background:#121212"><img src="assets/luis-emilio-3.jpg" alt="Luis Emilio Gómez Guerra" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 20%"><span style="position:absolute;top:12px;left:12px;pointer-events:none;background:#F2B33D;color:#0a0a0a;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.12em;padding:5px 9px">PRESENCIAL</span></div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <h3 style="margin:0;font-family:'Barlow Condensed',sans-serif;font-weight:300;font-size:28px;text-transform:uppercase;line-height:1.05">Luis Emilio Gómez Guerra</h3>
+          <div style="font-size:14px;color:#C9A56A;font-weight:600">Global Response Storytelling &amp; Media Director, Operation Blessing · Fundador de Media Builders · Instructor principal</div>
+        </div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.6;color:#EFE7DA;border-top:1px solid #2a2a2a;padding-top:12px">SESIONES › Introducción al programa · La entrevista profunda</div>
+        <p style="margin:0;font-size:14px;line-height:1.6;color:#b3b3b3;text-wrap:pretty">Storyteller especializado en documental humanitario y en narrativa para fundraising. Dirige la narrativa y producción audiovisual de respuesta a desastres a nivel global para Operation Blessing y ha producido micro-documentarios y documentales en terreno para organizaciones internacionales. En 14 años de carrera ha filmado historias en más de 25 países de América, África, Asia, Medio Oriente y Europa del Este.</p>
+      </article>
+      <article style="display:flex;flex-direction:column;gap:16px">
+        <div style="position:relative;aspect-ratio:4/5;background:#121212"><image-slot id="sp-hector" shape="rect" placeholder="Foto Héctor Galindo" style="position:absolute;inset:0;width:100%;height:100%"></image-slot><span style="position:absolute;top:12px;left:12px;pointer-events:none;background:#F2B33D;color:#0a0a0a;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.12em;padding:5px 9px">PRESENCIAL</span></div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <h3 style="margin:0;font-family:'Barlow Condensed',sans-serif;font-weight:300;font-size:28px;text-transform:uppercase;line-height:1.05">Héctor Galindo</h3>
+          <div style="font-size:14px;color:#C9A56A;font-weight:600">Catedrático de Artes Visuales, UNITEC San Pedro Sula</div>
+        </div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.6;color:#EFE7DA;border-top:1px solid #2a2a2a;padding-top:12px">SESIÓN › Investigación y preparación. Todo lo que pasa antes de encender la cámara.</div>
+        <p style="margin:0;font-size:14px;line-height:1.6;color:#b3b3b3;text-wrap:pretty">Licenciado en Ciencias de la Comunicación y Publicidad, especializado en dirección de cine y televisión. Dirige HG Producciones, su propia productora, tras 15 años en Alfa y Omega Visión como director de producción. Sonidista de formación, ha colaborado en producciones de cine y comerciales dentro y fuera de Honduras, y lleva 7 años enseñando guion, cinematografía, sonido y producción audiovisual.</p>
+      </article>
+      <article style="display:flex;flex-direction:column;gap:16px">
+        <div style="position:relative;aspect-ratio:4/5;background:#121212"><img src="assets/eric-salguero.jpg" alt="Eric Salguero" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 30%"><span style="position:absolute;top:12px;left:12px;pointer-events:none;background:#EFE7DA;color:#0a0a0a;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.12em;padding:5px 9px">VÍA ZOOM</span></div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <h3 style="margin:0;font-family:'Barlow Condensed',sans-serif;font-weight:300;font-size:28px;text-transform:uppercase;line-height:1.05">Eric Salguero</h3>
+          <div style="font-size:14px;color:#C9A56A;font-weight:600">Fundador de Cinema Studio · Guatemala</div>
+        </div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.6;color:#EFE7DA;border-top:1px solid #2a2a2a;padding-top:12px">SESIÓN › El arco de la historia. Cómo estructurar un relato real para que atrape de principio a fin.</div>
+        <p style="margin:0;font-size:14px;line-height:1.6;color:#b3b3b3;text-wrap:pretty">Publicista formado en McCann Erickson y Leo Burnett, documentalista para Deutsche Welle y productor regional de CBN. Como consultor ha desarrollado comunicación audiovisual para USAID, USDA, World Vision, Save the Children, United Way y el BCIE, entre otras organizaciones.</p>
+      </article>
+      <article style="display:flex;flex-direction:column;gap:16px">
+        <div style="position:relative;aspect-ratio:4/5;background:#121212"><img src="assets/jd-macias.jpg" alt="JD Macias" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 20%"><span style="position:absolute;top:12px;left:12px;pointer-events:none;background:#EFE7DA;color:#0a0a0a;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.12em;padding:5px 9px">VÍA ZOOM · INTERNACIONAL</span></div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <h3 style="margin:0;font-family:'Barlow Condensed',sans-serif;font-weight:300;font-size:28px;text-transform:uppercase;line-height:1.05">JD Macias</h3>
+          <div style="font-size:14px;color:#C9A56A;font-weight:600">Director de fotografía · Austin, Texas, EE. UU.</div>
+        </div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.6;color:#EFE7DA;border-top:1px solid #2a2a2a;padding-top:12px">SESIÓN › Luz cinematográfica. Cómo pensar la luz como herramienta narrativa.</div>
+        <p style="margin:0;font-size:14px;line-height:1.6;color:#b3b3b3;text-wrap:pretty">Director de fotografía que acompaña cada proyecto desde la idea inicial hasta el corte final. Su trabajo abarca la preproducción, el scouting de locaciones, el diseño de planos, la cinematografía en set y la supervisión de postproducción. En comerciales, contenido de marca, videos musicales o cine de ficción, aporta visión creativa y precisión técnica a cada encuadre.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- AGENDA -->
+<section id="agenda" data-screen-label="Agenda" style="padding:clamp(72px,10vw,140px) clamp(20px,5vw,48px);background:#121212">
+  <div style="max-width:1000px;margin:0 auto;display:flex;flex-direction:column;gap:clamp(40px,5vw,64px)">
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.25em;color:#F2B33D">00:04 — AGENDA</div>
+      <h2 style="margin:0;font-family:'Barlow Condensed',sans-serif;font-weight:300;font-size:clamp(40px,6.4vw,96px);line-height:.98;text-transform:uppercase">Un día, de la idea <span style="color:#F2B33D">a la escena</span></h2>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;border-bottom:2px solid #F2B33D;padding-bottom:12px;margin-bottom:8px">
+        <h3 style="margin:0;font-family:'Barlow Condensed',sans-serif;font-weight:300;font-size:clamp(30px,3.6vw,44px);text-transform:uppercase">Mañana <span style="color:#F2B33D">· Aprende</span></h3>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#9a9a9a;letter-spacing:.15em">V1 · SESIONES DE 35 MIN + PREGUNTAS</span>
+      </div>
+      <div style="display:grid;grid-template-columns:64px 1fr;gap:12px;align-items:stretch"><span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#F2B33D;padding-top:16px">08:00</span><div style="border:1px dashed #3d3d3d;padding:14px 18px;font-weight:600">Registro y bienvenida</div></div>
+      <div style="display:grid;grid-template-columns:64px 1fr;gap:12px;align-items:stretch"><span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#555555;padding-top:16px">--:--</span><div style="background:#1c1c1c;border:1px solid #333333;padding:14px 18px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap"><span><strong style="font-weight:600">Introducción a STORYCRAFTERS</strong><span style="color:#b3b3b3"> · Luis Emilio Gómez</span></span><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#C9A56A">35'</span></div></div>
+      <div style="display:grid;grid-template-columns:64px 1fr;gap:12px;align-items:stretch"><span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#555555;padding-top:16px">--:--</span><div style="background:#1c1c1c;border:1px solid #333333;padding:14px 18px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap"><span><strong style="font-weight:600">Investigación y preparación</strong><span style="color:#b3b3b3"> · Héctor Galindo</span></span><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#C9A56A">35'</span></div></div>
+      <div style="display:grid;grid-template-columns:64px 1fr;gap:12px;align-items:stretch"><span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#555555;padding-top:16px">--:--</span><div style="background:#1c1c1c;border:1px solid #333333;padding:14px 18px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap"><span><strong style="font-weight:600">El arco de la historia</strong><span style="color:#b3b3b3"> · Eric Salguero, vía Zoom</span></span><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#C9A56A">35'</span></div></div>
+      <div style="display:grid;grid-template-columns:64px 1fr;gap:12px;align-items:stretch"><span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#555555;padding-top:16px">--:--</span><div style="border:1px dashed #3d3d3d;padding:14px 18px;color:#cfcfcf">Coffee break</div></div>
+      <div style="display:grid;grid-template-columns:64px 1fr;gap:12px;align-items:stretch"><span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#555555;padding-top:16px">--:--</span><div style="background:#1c1c1c;border:1px solid #333333;padding:14px 18px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap"><span><strong style="font-weight:600">La entrevista profunda</strong><span style="color:#b3b3b3"> · Luis Emilio Gómez</span></span><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#C9A56A">35'</span></div></div>
+      <div style="display:grid;grid-template-columns:64px 1fr;gap:12px;align-items:stretch"><span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#555555;padding-top:16px">--:--</span><div style="background:#1c1c1c;border:1px solid #333333;padding:14px 18px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap"><span><strong style="font-weight:600">Luz cinematográfica</strong><span style="color:#b3b3b3"> · JD Macias, vía Zoom</span></span><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#C9A56A">35'</span></div></div>
+      <div style="display:grid;grid-template-columns:64px 1fr;gap:12px;align-items:stretch"><span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#555555;padding-top:16px">--:--</span><div style="border:1px dashed #3d3d3d;padding:14px 18px;color:#cfcfcf">Almuerzo</div></div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;border-bottom:2px solid #F2B33D;padding-bottom:12px;margin-bottom:8px">
+        <h3 style="margin:0;font-family:'Barlow Condensed',sans-serif;font-weight:300;font-size:clamp(30px,3.6vw,44px);text-transform:uppercase">Tarde <span style="color:#F2B33D">· Haz</span></h3>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#9a9a9a;letter-spacing:.15em">V2 · EN SET</span>
+      </div>
+      <div style="display:grid;grid-template-columns:64px 1fr;gap:12px;align-items:stretch"><span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#F2B33D;padding-top:16px">13:00</span><div style="background:#1c1c1c;border:1px solid #333333;padding:14px 18px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap"><strong style="font-weight:600">Stand-up de arranque</strong><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#C9A56A">15'</span></div></div>
+      <div style="display:grid;grid-template-columns:64px 1fr;gap:12px;align-items:stretch"><span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#555555;padding-top:16px">--:--</span><div style="background:#F2B33D;color:#0a0a0a;padding:14px 18px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap"><strong style="font-weight:700">Práctica de iluminación de entrevista con esquema de 3 puntos</strong><span style="font-family:'JetBrains Mono',monospace;font-size:12px">60'</span></div></div>
+      <div style="display:grid;grid-template-columns:64px 1fr;gap:12px;align-items:stretch"><span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#555555;padding-top:16px">--:--</span><div style="background:#F2B33D;color:#0a0a0a;padding:14px 18px;display:flex;flex-direction:column;gap:4px"><strong style="font-weight:700">Grabación en equipos de una secuencia de B-roll de 5 a 6 planos</strong><span style="font-size:14px">Con lo que capta la cámara proyectado en pantalla grande.</span></div></div>
+      <div style="display:grid;grid-template-columns:64px 1fr;gap:12px;align-items:stretch"><span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#555555;padding-top:16px">--:--</span><div style="background:#1c1c1c;border:1px solid #333333;padding:14px 18px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap"><strong style="font-weight:600">Testimonios: lo que aprendimos hoy</strong><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#C9A56A">35'</span></div></div>
+      <div style="display:grid;grid-template-columns:64px 1fr;gap:12px;align-items:stretch"><span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#F2B33D;padding-top:16px">18:30</span><div style="border:1px dashed #3d3d3d;padding:14px 18px;font-weight:600">Foto grupal y cierre</div></div>
+    </div>
+    <p style="margin:0;font-size:13px;color:#9a9a9a">Horarios sujetos a ajustes menores.</p>
+  </div>
+</section>
+
+<!-- INCLUYE -->
+<section id="incluye" data-screen-label="Incluye" style="padding:clamp(72px,10vw,140px) clamp(20px,5vw,48px);background:#0a0a0a">
+  <div style="max-width:1240px;margin:0 auto;display:flex;flex-direction:column;gap:clamp(40px,5vw,64px)">
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.25em;color:#F2B33D">00:05 — QUÉ INCLUYE</div>
+      <h2 style="margin:0;font-family:'Barlow Condensed',sans-serif;font-weight:300;font-size:clamp(40px,6.4vw,96px);line-height:.98;text-transform:uppercase">Tu inscripción <span style="color:#F2B33D">incluye</span></h2>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:1px;background:#262626;border:1px solid #262626">
+      <div style="background:#0a0a0a;padding:28px;display:flex;flex-direction:column;gap:18px;min-height:170px"><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#F2B33D">01</span><span style="font-size:19px;font-weight:600;line-height:1.35">Cinco sesiones con expositores de tres países</span></div>
+      <div style="background:#0a0a0a;padding:28px;display:flex;flex-direction:column;gap:18px;min-height:170px"><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#F2B33D">02</span><span style="font-size:19px;font-weight:600;line-height:1.35">Práctica en un set profesional</span></div>
+      <div style="background:#0a0a0a;padding:28px;display:flex;flex-direction:column;gap:18px;min-height:170px"><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#F2B33D">03</span><span style="font-size:19px;font-weight:600;line-height:1.35">Acceso a equipo profesional de cámara e iluminación</span></div>
+      <div style="background:#0a0a0a;padding:28px;display:flex;flex-direction:column;gap:18px;min-height:170px"><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#F2B33D">04</span><span style="font-size:19px;font-weight:600;line-height:1.35">Almuerzo y coffee break</span></div>
+      <div style="background:#0a0a0a;padding:28px;display:flex;flex-direction:column;gap:18px;min-height:170px"><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#F2B33D">05</span><span style="font-size:19px;font-weight:600;line-height:1.35">Camiseta oficial de STORYCRAFTERS</span></div>
+      <div style="background:#0a0a0a;padding:28px;display:flex;flex-direction:column;gap:18px;min-height:170px"><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#F2B33D">06</span><span style="font-size:19px;font-weight:600;line-height:1.35">Diploma digital de participación</span></div>
+      <div style="background:#F2B33D;color:#0a0a0a;padding:28px;display:flex;flex-direction:column;gap:18px;min-height:170px"><span style="font-family:'JetBrains Mono',monospace;font-size:12px">07</span><span style="font-size:19px;font-weight:700;line-height:1.35">Acceso a las fotos y escenas grabadas en el portal del evento</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- DESPUÉS -->
+<sc-if value="{{ despuesWide }}" hint-placeholder-val="{{ true }}">
+<section data-screen-label="Después de la masterclass" style="position:relative;overflow:hidden;min-height:clamp(480px,56.25vw,1000px);background:#000;display:flex;align-items:center">
+  <div aria-hidden="true" style="position:absolute;inset:0;background:url('assets/despues-retrato-web.jpg') 0% 50%/auto 90% no-repeat;-webkit-mask-image:linear-gradient(180deg,transparent 3%,#000 12%,#000 88%,transparent 97%);mask-image:linear-gradient(180deg,transparent 3%,#000 12%,#000 88%,transparent 97%);pointer-events:none"></div>
+  <div aria-hidden="true" style="position:absolute;inset:0;background:linear-gradient(270deg,rgba(0,0,0,.55) 0%,rgba(0,0,0,.4) 24%,rgba(0,0,0,0) 42%);pointer-events:none"></div>
+  <div style="position:relative;width:100%;max-width:1440px;margin:0 auto;padding:clamp(48px,6vw,96px) clamp(20px,4vw,56px);display:flex;justify-content:flex-end">
+    <div style="display:flex;flex-direction:column;gap:16px;max-width:340px">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.25em;color:#F2B33D">00:06 — DESPUÉS DE LA MASTERCLASS</div>
+      <h2 style="margin:0;font-family:'Barlow Condensed',sans-serif;font-weight:300;font-size:clamp(32px,3.6vw,52px);line-height:.98;text-transform:uppercase;text-wrap:balance">Tu trabajo no se queda <span style="color:#F2B33D">en el set</span></h2>
+      <p style="margin:0;font-size:16px;line-height:1.65;color:#cfcfcf;text-wrap:pretty">Unos días después del evento publicaremos en este portal las fotos de la jornada y las escenas que grabaron los equipos. Te avisaremos por correo cuando estén listas para que las descargues y las sumes a tu portafolio.</p>
+    </div>
+  </div>
+</section>
+</sc-if>
+<sc-if value="{{ despuesNarrow }}" hint-placeholder-val="{{ false }}">
+<section data-screen-label="Después de la masterclass" style="background:#000;display:flex;flex-direction:column">
+  <div aria-hidden="true" style="width:100%;aspect-ratio:2/1;background:url('assets/despues-retrato-web.jpg') 45% 50%/cover no-repeat;-webkit-mask-image:linear-gradient(180deg,#000 75%,transparent 100%);mask-image:linear-gradient(180deg,#000 75%,transparent 100%)"></div>
+  <div style="display:flex;flex-direction:column;gap:16px;max-width:620px;padding:8px clamp(20px,5vw,48px) clamp(56px,8vw,96px)">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.25em;color:#F2B33D">00:06 — DESPUÉS DE LA MASTERCLASS</div>
+      <h2 style="margin:0;font-family:'Barlow Condensed',sans-serif;font-weight:300;font-size:clamp(32px,3.6vw,52px);line-height:.98;text-transform:uppercase;text-wrap:balance">Tu trabajo no se queda <span style="color:#F2B33D">en el set</span></h2>
+      <p style="margin:0;font-size:16px;line-height:1.65;color:#cfcfcf;text-wrap:pretty">Unos días después del evento publicaremos en este portal las fotos de la jornada y las escenas que grabaron los equipos. Te avisaremos por correo cuando estén listas para que las descargues y las sumes a tu portafolio.</p>
+  </div>
+</section>
+</sc-if>
+
+<!-- SEDE -->
+<section data-screen-label="Sede" style="padding:clamp(72px,10vw,140px) clamp(20px,5vw,48px);background:#0a0a0a">
+  <div style="max-width:1240px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:clamp(32px,5vw,72px);align-items:start">
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.25em;color:#F2B33D">00:07 — LOCACIÓN</div>
+      <h2 style="margin:0;font-family:'Barlow Condensed',sans-serif;font-weight:300;font-size:clamp(56px,8vw,120px);line-height:.9;text-transform:uppercase">La <span style="color:#F2B33D">sede</span></h2>
+      <p style="margin:0;font-size:clamp(17px,1.5vw,20px);line-height:1.6;text-wrap:pretty">Estudios del canal Alfa y Omega Visión, en el terreno de Iglesia Pier, San Pedro Sula, Honduras.</p>
+      <div style="display:grid;grid-template-columns:auto 1fr;gap:12px 18px;align-items:baseline;border-top:1px solid rgba(239,231,218,.15);padding-top:20px">
+        <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#F2B33D">DIRECCIÓN</span><span style="font-size:15px;line-height:1.5;color:#EFE7DA">Colindancia con Col. Las Anonas, segundo desvío después del puente Río Blanco en el Segundo Anillo, 21101 San Pedro Sula · <span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#C9A56A">GXMW+W59</span></span>
+      </div>
+      <a href="https://maps.app.goo.gl/3DXgQzQmvxdWX4Ti9" target="_blank" rel="noopener" style="align-self:flex-start;border:1px solid rgba(239,231,218,.35);color:#EFE7DA;font-weight:600;font-size:15px;padding:14px 22px;border-radius:2px" style-hover="border-color:#F2B33D;color:#F2B33D">Abrir en Google Maps ↗</a>
+    </div>
+    <div style="position:relative;aspect-ratio:4/3;background:#121212;border:1px solid #2a2a2a;display:flex;align-items:center;justify-content:center">
+      <image-slot id="sede-map" shape="rect" placeholder="Mapa embebido / foto de la sede" style="position:absolute;inset:0;width:100%;height:100%"></image-slot>
+    </div>
+  </div>
+</section>
+
+<!-- INVERSIÓN + FORM -->
+<section id="inscripcion" data-screen-label="Inscripción" style="padding:clamp(72px,10vw,140px) clamp(20px,5vw,48px);background:#F2B33D;color:#0a0a0a">
+  <div style="max-width:1240px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,400px),1fr));gap:clamp(40px,6vw,88px);align-items:start">
+    <div style="display:flex;flex-direction:column;gap:24px">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.25em">00:08 — INVERSIÓN</div>
+      <h2 style="margin:0;font-family:'Barlow Condensed',sans-serif;font-weight:300;font-size:clamp(56px,8vw,120px);line-height:.9;text-transform:uppercase">Reserva tu lugar</h2>
+      <div style="display:flex;flex-direction:column;border-top:2px solid #0a0a0a">
+        <sc-for list="{{ tiers }}" as="t" hint-placeholder-count="4">
+          <div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 16px;align-items:baseline;padding:14px 12px;border-bottom:1px solid rgba(10,10,10,.25);background:{{ t.bg }};color:{{ t.fg }}">
+            <span style="font-weight:700;font-size:17px">{{ t.name }}</span>
+            <span style="font-family:'Barlow Condensed',sans-serif;font-weight:500;font-size:30px;line-height:1">{{ t.price }}</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.06em;opacity:.8">{{ t.when }}</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.15em;font-weight:500">{{ t.tag }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <sc-if value="{{ hasNextPrice }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;gap:10px;align-items:center;font-weight:700;font-size:15px"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;background:#0a0a0a;color:#F2B33D;padding:4px 8px;letter-spacing:.12em">AVISO</span><span>{{ nextPriceMsg }}</span></div>
+      </sc-if>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.6">PAGO › Tarjeta (enlace seguro) o transferencia bancaria</div>
+      <div style="background:#0a0a0a;color:#EFE7DA;padding:22px 24px;display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap"><span style="font-family:'Barlow Condensed',sans-serif;font-size:30px;text-transform:uppercase">Quedan <span style="color:#F2B33D">{{ spotsLeft }}</span> lugares</span><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#9a9a9a">DE 40</span></div>
+        <div style="height:6px;background:#2a2a2a"><div style="height:100%;background:#F2B33D;width:{{ spotsPct }}"></div></div>
+      </div>
+    </div>
+
+    <div style="background:#0a0a0a;color:#EFE7DA;padding:clamp(24px,4vw,44px);display:flex;flex-direction:column;gap:24px">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
+        <div style="display:flex;flex-direction:column;gap:6px"><div style="height:3px;background:#F2B33D"></div><span style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.15em;color:#F2B33D">01 DATOS</span></div>
+        <div style="display:flex;flex-direction:column;gap:6px"><div style="height:3px;background:{{ bar2 }}"></div><span style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.15em;color:{{ lbl2 }}">02 PAGO</span></div>
+        <div style="display:flex;flex-direction:column;gap:6px"><div style="height:3px;background:{{ bar3 }}"></div><span style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.15em;color:{{ lbl3 }}">03 CONFIRMACIÓN</span></div>
+      </div>
+      <sc-if value="{{ isStep1 }}" hint-placeholder-val="{{ true }}">
+        <form onSubmit="{{ onSubmit }}" style="display:flex;flex-direction:column;gap:22px">
+          <h3 style="margin:0;font-family:'Barlow Condensed',sans-serif;font-weight:300;font-size:clamp(30px,3.4vw,42px);text-transform:uppercase;line-height:1">Inscríbete en <span style="color:#F2B33D">STORYCRAFTERS</span></h3>
+          <label style="display:flex;flex-direction:column;gap:6px"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.15em;color:#C9A56A">NOMBRE COMPLETO * <span style="color:#9a9a9a">(COMO APARECERÁ EN EL DIPLOMA)</span></span><input name="nombre" required="required" style="background:transparent;border:none;border-bottom:1px solid #555555;color:#EFE7DA;font:inherit;font-size:16px;padding:10px 0;outline:none" style-focus="border-bottom-color:#F2B33D"></label>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:22px">
+            <label style="display:flex;flex-direction:column;gap:6px"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.15em;color:#C9A56A">CORREO *</span><input name="email" type="email" required="required" style="background:transparent;border:none;border-bottom:1px solid #555555;color:#EFE7DA;font:inherit;font-size:16px;padding:10px 0;outline:none" style-focus="border-bottom-color:#F2B33D"></label>
+            <label style="display:flex;flex-direction:column;gap:6px"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.15em;color:#C9A56A">WHATSAPP *</span><input name="whatsapp" type="tel" required="required" style="background:transparent;border:none;border-bottom:1px solid #555555;color:#EFE7DA;font:inherit;font-size:16px;padding:10px 0;outline:none" style-focus="border-bottom-color:#F2B33D"></label>
+            <label style="display:flex;flex-direction:column;gap:6px"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.15em;color:#C9A56A">CIUDAD *</span><input name="ciudad" required="required" style="background:transparent;border:none;border-bottom:1px solid #555555;color:#EFE7DA;font:inherit;font-size:16px;padding:10px 0;outline:none" style-focus="border-bottom-color:#F2B33D"></label>
+            <label style="display:flex;flex-direction:column;gap:6px"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.15em;color:#C9A56A">OCUPACIÓN *</span><select name="ocupacion" required="required" style="background:#0a0a0a;border:none;border-bottom:1px solid #555555;color:#EFE7DA;font:inherit;font-size:16px;padding:10px 0;outline:none"><option value="">Selecciona…</option><option>Filmmaker / Videógrafo</option><option>Fotógrafo</option><option>Creador de contenido</option><option>Estudiante</option><option>Comunicador / ONG</option><option>Otro</option></select></label>
+            <label style="display:flex;flex-direction:column;gap:6px"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.15em;color:#C9A56A">EXPERIENCIA *</span><select name="nivel" required="required" style="background:#0a0a0a;border:none;border-bottom:1px solid #555555;color:#EFE7DA;font:inherit;font-size:16px;padding:10px 0;outline:none"><option value="">Selecciona…</option><option>Principiante</option><option>Intermedio</option><option>Avanzado</option></select></label>
+            <label style="display:flex;flex-direction:column;gap:6px"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.15em;color:#C9A56A">TALLA DE CAMISETA *</span><select name="talla" required="required" style="background:#0a0a0a;border:none;border-bottom:1px solid #555555;color:#EFE7DA;font:inherit;font-size:16px;padding:10px 0;outline:none"><option value="">Selecciona…</option><option>XS</option><option>S</option><option>M</option><option>L</option><option>XL</option><option>XXL</option></select></label>
+            <label style="display:flex;flex-direction:column;gap:6px"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.15em;color:#C9A56A">¿CÓMO TE ENTERASTE?</span><select name="fuente" style="background:#0a0a0a;border:none;border-bottom:1px solid #555555;color:#EFE7DA;font:inherit;font-size:16px;padding:10px 0;outline:none"><option value="">Selecciona…</option><option>Instagram</option><option>Facebook</option><option>WhatsApp</option><option>Recomendación</option><option>Otro</option></select></label>
+          </div>
+          <label style="display:flex;flex-direction:column;gap:6px"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.15em;color:#C9A56A">RESTRICCIONES ALIMENTARIAS</span><input name="dieta" style="background:transparent;border:none;border-bottom:1px solid #555555;color:#EFE7DA;font:inherit;font-size:16px;padding:10px 0;outline:none" style-focus="border-bottom-color:#F2B33D"></label>
+          <label style="display:flex;gap:12px;align-items:flex-start;font-size:14px;line-height:1.5;color:#cfcfcf;cursor:pointer"><input type="checkbox" required="required" style="width:20px;height:20px;accent-color:#F2B33D;margin:0;flex-shrink:0"><span>Acepto recibir comunicaciones sobre el evento *</span></label>
+          <button type="submit" style="background:#F2B33D;color:#0a0a0a;border:none;font:inherit;font-weight:700;font-size:17px;padding:18px;border-radius:2px;cursor:pointer;min-height:56px" style-hover="background:#FFD27A">Continuar al pago →</button>
+          <p style="margin:0;font-size:13px;line-height:1.5;color:#9a9a9a">Tu inscripción queda confirmada una vez recibido el pago.</p>
+        </form>
+      </sc-if>
+      <sc-if value="{{ isStep2 }}" hint-placeholder-val="{{ false }}">
+        <form onSubmit="{{ onPay }}" style="display:flex;flex-direction:column;gap:22px">
+          <h3 style="margin:0;font-family:'Barlow Condensed',sans-serif;font-weight:300;font-size:clamp(30px,3.4vw,42px);text-transform:uppercase;line-height:1">Forma de <span style="color:#F2B33D">pago</span></h3>
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;background:#121212;border:1px solid #2a2a2a;padding:16px 18px">
+            <div style="display:flex;flex-direction:column;gap:4px"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.15em;color:#C9A56A">INSCRIPCIÓN · {{ name }}</span><span style="font-size:15px">STORYCRAFTERS · 12 de diciembre 2026</span></div>
+            <span style="font-family:'Barlow Condensed',sans-serif;font-weight:500;font-size:30px;line-height:1;color:#F2B33D">{{ payPrice }}</span>
+          </div>
+          <label style="display:flex;gap:12px;align-items:flex-start;font-size:14px;line-height:1.5;color:#cfcfcf;cursor:pointer"><input type="checkbox" checked="{{ student }}" onChange="{{ toggleStudent }}" style="width:20px;height:20px;accent-color:#F2B33D;margin:0;flex-shrink:0"><span>Soy estudiante: tarifa de L 1,700. Debo presentar mi carné vigente el día del evento (cupos limitados).</span></label>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:10px">
+            <button type="button" onClick="{{ pickCard }}" style="text-align:left;background:{{ cardBg }};color:{{ cardFg }};border:1px solid #F2B33D;font:inherit;padding:16px;cursor:pointer;display:flex;flex-direction:column;gap:4px;min-height:72px"><strong style="font-size:16px">Tarjeta</strong><span style="font-size:13px;opacity:.8">Crédito o débito · confirmación inmediata</span></button>
+            <button type="button" onClick="{{ pickTransfer }}" style="text-align:left;background:{{ trBg }};color:{{ trFg }};border:1px solid #F2B33D;font:inherit;padding:16px;cursor:pointer;display:flex;flex-direction:column;gap:4px;min-height:72px"><strong style="font-size:16px">Transferencia</strong><span style="font-size:13px;opacity:.8">Depósito bancario · verificación manual</span></button>
+          </div>
+          <sc-if value="{{ isCard }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;flex-direction:column;gap:14px;border-top:1px solid #2a2a2a;padding-top:16px">
+              <p style="margin:0;font-size:15px;line-height:1.6;color:#cfcfcf">El pago con tarjeta se hace en una página segura externa. Se abrirá en una pestaña nueva; al terminar, vuelve aquí y confirma.</p>
+              <a href="#" target="_blank" rel="noopener" style="align-self:flex-start;display:flex;align-items:center;gap:10px;border:1px solid #F2B33D;color:#F2B33D;font-weight:700;font-size:16px;padding:14px 20px;min-height:52px" style-hover="background:#F2B33D;color:#0a0a0a">Ir a pagar {{ payPrice }} ↗</a>
+              <span style="font-size:12px;color:#9a9a9a">Enlace de pago: <span style="border:1px dashed #C9A56A;color:#C9A56A;font-family:'JetBrains Mono',monospace;font-size:11px;padding:2px 6px">[URL DEL ENLACE DE PAGO]</span></span>
+              <label style="display:flex;gap:12px;align-items:flex-start;font-size:14px;line-height:1.5;color:#cfcfcf;cursor:pointer"><input type="checkbox" required="required" style="width:20px;height:20px;accent-color:#F2B33D;margin:0;flex-shrink:0"><span>Ya realicé el pago con tarjeta *</span></label>
+            </div>
+          </sc-if>
+          <sc-if value="{{ isTransfer }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:18px">
+              <div style="display:grid;grid-template-columns:auto 1fr;gap:10px 18px;align-items:baseline;border-top:1px solid #2a2a2a;padding-top:16px;font-size:15px">
+                <span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.15em;color:#C9A56A">BANCO</span><span style="justify-self:start;border:1px dashed #C9A56A;color:#C9A56A;font-family:'JetBrains Mono',monospace;font-size:11px;padding:3px 8px">[BANCO]</span>
+                <span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.15em;color:#C9A56A">CUENTA</span><span style="justify-self:start;border:1px dashed #C9A56A;color:#C9A56A;font-family:'JetBrains Mono',monospace;font-size:11px;padding:3px 8px">[NÚMERO DE CUENTA]</span>
+                <span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.15em;color:#C9A56A">A NOMBRE DE</span><span>Media Builders, S. de R.L. de C.V.</span>
+                <span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.15em;color:#C9A56A">REFERENCIA</span><span>Tu nombre completo</span>
+              </div>
+              <label style="display:flex;flex-direction:column;gap:8px"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.15em;color:#C9A56A">COMPROBANTE DE PAGO *</span><input type="file" accept="image/*,.pdf" required="required" style="color:#cfcfcf;font:inherit;font-size:14px;border:1px dashed #555555;padding:14px"></label>
+              <span style="font-size:13px;line-height:1.5;color:#9a9a9a">Tu lugar queda apartado mientras verificamos el pago (hasta <span style="border:1px dashed #C9A56A;color:#C9A56A;font-family:'JetBrains Mono',monospace;font-size:11px;padding:3px 8px">[48 H]</span>).</span>
+            </div>
+          </sc-if>
+          <div style="display:flex;gap:12px;flex-wrap:wrap">
+            <button type="button" onClick="{{ back }}" style="background:none;border:1px solid #555555;color:#cfcfcf;font:inherit;font-size:15px;padding:16px 20px;cursor:pointer;min-height:56px">← Datos</button>
+            <button type="submit" style="flex:1;background:#F2B33D;color:#0a0a0a;border:none;font:inherit;font-weight:700;font-size:17px;padding:18px;border-radius:2px;cursor:pointer;min-height:56px" style-hover="background:#FFD27A">{{ payLabel }}</button>
+          </div>
+        </form>
+      </sc-if>
+      <sc-if value="{{ isDone }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;gap:18px;padding:12px 0">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.2em;color:#F2B33D">{{ doneTag }}</div>
+          <h3 style="margin:0;font-family:'Barlow Condensed',sans-serif;font-weight:300;font-size:clamp(40px,5vw,64px);text-transform:uppercase;line-height:.95">{{ doneTitle }}</h3>
+          <sc-if value="{{ isCard }}" hint-placeholder-val="{{ true }}"><p style="margin:0;font-size:18px;line-height:1.6;color:#cfcfcf">Tu lugar en STORYCRAFTERS está reservado. En cuanto validemos el pago con tarjeta recibirás la confirmación final. Te enviamos un correo de confirmación a <strong style="color:#EFE7DA">{{ email }}</strong>. Nos vemos el 12 de diciembre.</p></sc-if>
+          <sc-if value="{{ isTransfer }}" hint-placeholder-val="{{ false }}"><p style="margin:0;font-size:18px;line-height:1.6;color:#cfcfcf">Recibimos tus datos y tu comprobante. Tu lugar queda apartado mientras verificamos el pago; cuando se acredite te enviaremos la confirmación a <strong style="color:#EFE7DA">{{ email }}</strong>.</p></sc-if>
+          <button onClick="{{ reset }}" style="align-self:flex-start;background:none;border:1px solid #555555;color:#cfcfcf;font:inherit;font-size:14px;padding:10px 16px;cursor:pointer">Inscribir a otra persona</button>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="preguntas" data-screen-label="Preguntas" style="padding:clamp(72px,10vw,140px) clamp(20px,5vw,48px);background:#0a0a0a">
+  <div style="max-width:1000px;margin:0 auto;display:flex;flex-direction:column;gap:clamp(36px,5vw,56px)">
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.25em;color:#F2B33D">00:09 — PREGUNTAS FRECUENTES</div>
+      <h2 style="margin:0;font-family:'Barlow Condensed',sans-serif;font-weight:300;font-size:clamp(40px,6.4vw,96px);line-height:.98;text-transform:uppercase">Preguntas</h2>
+    </div>
+    <div style="display:flex;flex-direction:column;border-top:1px solid rgba(239,231,218,.14)">
+      <sc-for list="{{ faqs }}" as="f" hint-placeholder-count="8">
+        <div style="border-bottom:1px solid rgba(239,231,218,.14)">
+          <button onClick="{{ f.toggle }}" style="width:100%;display:flex;justify-content:space-between;align-items:center;gap:20px;background:none;border:none;color:#EFE7DA;font:inherit;font-size:clamp(17px,1.6vw,21px);font-weight:600;text-align:left;padding:22px 0;cursor:pointer;min-height:64px" style-hover="color:#F2B33D"><span>{{ f.q }}</span><span style="font-family:'JetBrains Mono',monospace;font-size:20px;color:#F2B33D;flex-shrink:0">{{ f.sign }}</span></button>
+          <sc-if value="{{ f.isOpen }}" hint-placeholder-val="{{ false }}">
+            <p style="margin:0;padding:0 48px 24px 0;font-size:17px;line-height:1.65;color:#cfcfcf;text-wrap:pretty">{{ f.a }}</p>
+          </sc-if>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</section>
+
+<!-- CIERRE -->
+<section data-screen-label="Cierre" style="position:relative;overflow:hidden;min-height:clamp(420px,56.25vw,1000px);background:#0a0a0a url('assets/bg-mascara-web.jpg') 50% 35%/cover no-repeat;display:flex;align-items:flex-end">
+  <div aria-hidden="true" style="position:absolute;left:0;right:0;bottom:0;height:45%;background:linear-gradient(180deg,rgba(10,10,10,0) 0%,rgba(10,10,10,.55) 55%,rgba(10,10,10,.85) 100%);pointer-events:none"></div>
+  <div style="position:relative;width:100%;max-width:1440px;margin:0 auto;padding:clamp(28px,4vw,56px) clamp(20px,5vw,48px);display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:24px">
+    <h2 style="margin:0;max-width:440px;font-family:'Barlow Condensed',sans-serif;font-weight:300;font-size:clamp(26px,2.8vw,38px);line-height:1.05;text-transform:uppercase;text-wrap:balance;color:#EFE7DA">Las mejores historias son las reales. <span style="color:#F2B33D">Aprende a contarlas.</span></h2>
+    <a href="#inscripcion" style="background:#F2B33D;color:#0a0a0a;font-weight:700;font-size:15px;padding:15px 24px;border-radius:2px" style-hover="background:#FFD27A;color:#0a0a0a">Reserva tu lugar en STORYCRAFTERS</a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer style="padding:48px clamp(20px,5vw,48px) 120px;background:#050505;border-top:1px solid #262626">
+  <div style="max-width:1240px;margin:0 auto;display:flex;flex-wrap:wrap;justify-content:space-between;gap:32px;align-items:flex-start">
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <span style="font-family:'Barlow Condensed',sans-serif;font-size:28px;letter-spacing:.05em">STORYCRAFTERS</span>
+      <div style="display:flex;align-items:center;gap:12px"><span style="font-size:14px;color:#9a9a9a">Un programa de</span><img src="assets/logo-media-builders.png" alt="Media Builders" style="height:22px;width:auto;filter:invert(1)"></div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:40px;font-size:14px">
+      <div style="display:flex;flex-direction:column;gap:8px"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#C9A56A;letter-spacing:.15em">CONTACTO</span><span style="color:#cfcfcf"><a href="mailto:info@themediabuilders.com">info@themediabuilders.com</a> · [WHATSAPP]</span></div>
+      <div style="display:flex;flex-direction:column;gap:8px"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#C9A56A;letter-spacing:.15em">REDES</span><span style="color:#cfcfcf">[INSTAGRAM] · [FACEBOOK]</span></div>
+    </div>
+  </div>
+  <div style="max-width:1240px;margin:36px auto 0;font-size:12px;color:#7a7a7a">© 2026 Media Builders, S. de R.L. de C.V.</div>
+</footer>
+
+<!-- CHAT -->
+<div style="position:fixed;right:16px;bottom:{{ chatBottom }};z-index:55;display:flex;flex-direction:column;align-items:flex-end;gap:10px">
+  <sc-if value="{{ chatOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="width:min(320px,calc(100vw - 32px));background:#EFE7DA;color:#0a0a0a;padding:18px;box-shadow:0 20px 50px rgba(0,0,0,.5);display:flex;flex-direction:column;gap:10px">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.15em;color:#6b5a44">ASISTENTE STORYCRAFTERS</div>
+      <p style="margin:0;font-size:15px;line-height:1.5">Hola. ¿Sobre qué tienes dudas?</p>
+      <sc-for list="{{ quick }}" as="qq" hint-placeholder-count="4">
+        <a href="#preguntas" onClick="{{ qq.go }}" style="display:block;border:1px solid #0a0a0a;color:#0a0a0a;padding:10px 12px;font-size:14px;font-weight:600" style-hover="background:#0a0a0a;color:#F2B33D">{{ qq.q }}</a>
+      </sc-for>
+    </div>
+  </sc-if>
+  <button onClick="{{ toggleChat }}" style="background:#EFE7DA;color:#0a0a0a;border:none;border-radius:28px;font:inherit;font-weight:700;font-size:14px;padding:14px 20px;min-height:48px;cursor:pointer;box-shadow:0 10px 30px rgba(0,0,0,.45);display:flex;align-items:center;gap:8px" style-hover="background:#fff"><span style="width:8px;height:8px;border-radius:50%;background:#2fb26a"></span>{{ chatLabel }}</button>
+</div>
+
+<!-- MOBILE STICKY CTA -->
+<sc-if value="{{ isMobile }}" hint-placeholder-val="{{ false }}">
+  <div style="position:fixed;left:0;right:0;bottom:0;z-index:54;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:rgba(5,5,5,.94);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-top:1px solid #262626;display:flex;align-items:center;gap:12px">
+    <div style="display:flex;flex-direction:column;font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.4;color:#C9A56A;flex-shrink:0"><span>SÁB 12 DIC</span><span style="color:#9a9a9a">CUPO 40</span></div>
+    <a href="#inscripcion" style="flex:1;text-align:center;background:#F2B33D;color:#0a0a0a;font-weight:700;font-size:16px;padding:15px;border-radius:2px">Inscribirme</a>
+  </div>
+</sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;grain&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;showCountdown&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;spotsLeft&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:40,&quot;min&quot;:0,&quot;max&quot;:40,&quot;step&quot;:1,&quot;tsType&quot;:&quot;number&quot;}}">
+class Component extends DCLogic {
+  state = { w: typeof window !== 'undefined' ? window.innerWidth : 1200, now: Date.now(), open: 0, submitted: false, email: '', chat: false };
+  componentDidMount() {
+    this._r = () => this.setState({ w: window.innerWidth });
+    window.addEventListener('resize', this._r);
+    this._t = setInterval(() => this.setState({ now: Date.now() }), 1000);
+  }
+  componentWillUnmount() { window.removeEventListener('resize', this._r); clearInterval(this._t); }
+  renderVals() {
+    const p = this.props;
+    const isMobile = this.state.w < 860;
+    const target = new Date('2026-12-12T08:00:00-06:00').getTime();
+    let s = Math.max(0, Math.floor((target - this.state.now) / 1000));
+    const pad = n => String(n).padStart(2, '0');
+    const d = Math.floor(s / 86400); s %= 86400;
+    const h = Math.floor(s / 3600); s %= 3600;
+    const m = Math.floor(s / 60); s %= 60;
+    const FAQ = [
+      ['¿Necesito llevar cámara?', 'No. Media Builders pone todo el equipo de cámara e iluminación.'],
+      ['¿Necesito experiencia previa?', 'Ayuda tener nociones básicas de cámara, pero la masterclass está pensada para que cualquier persona con interés en contar historias pueda aprovecharlo.'],
+      ['¿Las charlas son presenciales?', 'La masterclass es 100 % presencial para los participantes. Dos de los expositores, Eric Salguero y JD Macias, se conectarán por Zoom y se proyectarán en pantalla grande.'],
+      ['¿Está incluida la comida?', 'Sí, incluye almuerzo y coffee break.'],
+      ['¿Recibo constancia?', 'Sí, un diploma digital de participación.'],
+      ['¿Cuándo recibo las fotos y escenas?', 'Unos días después del evento, en este portal. Te avisaremos por correo.'],
+      ['¿Puedo transferir mi cupo?', '[POLÍTICA PENDIENTE]'],
+      ['¿Hay reembolsos?', '[POLÍTICA PENDIENTE]']
+    ];
+    const nowD = new Date(this.state.now);
+    const T = [
+      { name: 'Preventa', price: 'L 1,700', when: 'Hasta el 5 de noviembre', end: new Date('2026-11-06T00:00:00-06:00') },
+      { name: 'Regular', price: 'L 1,900', startLabel: '6 de noviembre', when: '6 – 25 de noviembre', end: new Date('2026-11-26T00:00:00-06:00') },
+      { name: 'Cupos finales', price: 'L 2,200', startLabel: '26 de noviembre', when: '26 de noviembre – 11 de diciembre', end: new Date('2026-12-12T00:00:00-06:00') }
+    ];
+    let cur = T.findIndex(t => nowD < t.end); if (cur < 0) cur = T.length - 1;
+    const curPrice = T[cur].price;
+    const tiers = T.map((t, i) => ({ name: t.name, price: t.price, when: t.when, tag: i === cur ? '● VIGENTE' : (i < cur ? 'CERRADO' : ''), bg: i === cur ? '#0a0a0a' : 'transparent', fg: i === cur ? '#F2B33D' : (i < cur ? 'rgba(10,10,10,.45)' : '#0a0a0a') }))
+      .concat([{ name: 'Estudiantes', price: 'L 1,700', when: 'Todo el tiempo · con carné · cupos limitados', tag: '', bg: 'transparent', fg: '#0a0a0a' }]);
+    const nextMsg = cur < T.length - 1 ? 'Sube a ' + T[cur + 1].price + ' el ' + T[cur + 1].startLabel + (cur===0?'':'') : '';
+    const setOpen = i => this.setState(st => ({ open: st.open === i ? -1 : i }));
+    const spots = Math.max(0, Math.min(40, p.spotsLeft ?? 40));
+    return {
+      tiers, hasNextPrice: !!nextMsg, nextPriceMsg: nextMsg,
+      grain: p.grain ?? true,
+      showCountdown: p.showCountdown ?? true,
+      isMobile, isDesktop: !isMobile,
+      despuesWide: this.state.w >= 1180, despuesNarrow: this.state.w < 1180,
+      tc: `${pad(d)}:${pad(h)}:${pad(m)}:${pad(s)}`,
+      spotsLeft: spots,
+      spotsPct: `${(spots / 40) * 100}%`,
+      faqs: FAQ.map(([q, a], i) => ({ q, a, isOpen: this.state.open === i, sign: this.state.open === i ? '−' : '+', toggle: () => setOpen(i) })),
+      quick: [0, 1, 2, 3].map(i => ({ q: FAQ[i][0], go: () => this.setState({ open: i, chat: false }) })),
+      chatOpen: this.state.chat,
+      chatLabel: this.state.chat ? 'Cerrar' : '¿Tienes preguntas?',
+      toggleChat: () => this.setState(st => ({ chat: !st.chat })),
+      chatBottom: isMobile ? '84px' : '24px',
+      ...(() => {
+        const step = this.state.step || 1, card = (this.state.method || 'card') === 'card';
+        const on = '#F2B33D', off = '#2a2a2a';
+        return {
+          isStep1: step === 1, isStep2: step === 2, isDone: step === 3,
+          bar2: step >= 2 ? on : off, bar3: step >= 3 ? on : off,
+          lbl2: step >= 2 ? on : '#7a7a7a', lbl3: step >= 3 ? on : '#7a7a7a',
+          isCard: card, isTransfer: !card,
+          cardBg: card ? '#F2B33D' : 'transparent', cardFg: card ? '#0a0a0a' : '#EFE7DA',
+          trBg: !card ? '#F2B33D' : 'transparent', trFg: !card ? '#0a0a0a' : '#EFE7DA',
+          payLabel: card ? 'Confirmar inscripción' : 'Enviar comprobante',
+          doneTag: card ? '● CORTE · TOMA BUENA' : '● EN REVISIÓN',
+          doneTitle: card ? '¡Listo!' : 'Lugar apartado',
+          student: !!this.state.student,
+          toggleStudent: () => this.setState(st => ({ student: !st.student })),
+          payPrice: this.state.student ? 'L 1,700' : curPrice,
+          name: (this.state.name || '').toUpperCase(),
+          email: this.state.email,
+          pickCard: () => this.setState({ method: 'card' }),
+          pickTransfer: () => this.setState({ method: 'transfer' }),
+          back: () => this.setState({ step: 1 }),
+          onSubmit: e => { e.preventDefault(); const fd = new FormData(e.target); this.setState({ step: 2, email: fd.get('email') || '', name: fd.get('nombre') || '' }); },
+          onPay: e => { e.preventDefault(); this.setState({ step: 3 }); },
+          reset: () => this.setState({ step: 1, email: '', name: '', method: 'card' })
+        };
+      })()
+    };
+  }
+}
+</script>
+</body>
+</html>
