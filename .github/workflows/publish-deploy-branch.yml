@@ -11,6 +11,11 @@ on:
 permissions:
   contents: write
 
+# Un push mas nuevo nunca debe ser pisado por una corrida mas vieja que termine despues
+concurrency:
+  group: publish-deploy-branch
+  cancel-in-progress: false
+
 jobs:
   publish:
     runs-on: ubuntu-latest
