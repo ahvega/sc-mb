@@ -1,0 +1,31 @@
+name: Publish deploy branch
+
+# Hostinger auto-deploys the `deploy` branch, which contains ONLY the files
+# that belong to the live site. Everything else (docs, source, assets) stays on main.
+on:
+  push:
+    branches: [main]
+    paths: [index.html, .htaccess, .github/workflows/publish-deploy-branch.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build deploy tree
+        run: |
+          mkdir -p /tmp/site
+          cp index.html .htaccess /tmp/site/
+      - name: Force-push to deploy branch
+        run: |
+          cd /tmp/site
+          git init -b deploy
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Deploy ${GITHUB_SHA::7}"
+          git push --force "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" deploy
