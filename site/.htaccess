@@ -7,7 +7,6 @@ RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
 # Defensa en profundidad: nada que no sea el sitio debe servirse
 RedirectMatch 404 /\.git
-RedirectMatch 404 ^/(source|assets)(/|$)
 <FilesMatch "(\.md|\.dc\.html|\.htaccess)$">
   Require all denied
 </FilesMatch>
