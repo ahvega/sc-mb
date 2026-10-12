@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 
 try:
-    from PIL import Image
+    from PIL import Image, ImageOps
 except ImportError:
     sys.exit("Falta Pillow. Instálalo con:  pip install Pillow")
 
@@ -38,7 +38,7 @@ def optimize(path):
         if path.suffix.lower() == ".png":
             im.save(tmp, format="PNG", optimize=True)
         else:
-            im.convert("RGB").save(tmp, format="JPEG", quality=82, optimize=True, progressive=True)
+            ImageOps.exif_transpose(im).convert("RGB").save(tmp, format="JPEG", quality=82, optimize=True, progressive=True)
     after = tmp.stat().st_size
     if after < before * 0.95:  # ahorro mínimo del 5 %: evita recomprimir (y degradar) imágenes ya optimizadas
         os.replace(tmp, path)
