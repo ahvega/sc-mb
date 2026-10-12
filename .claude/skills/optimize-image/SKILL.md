@@ -61,7 +61,7 @@ a key baked into the script would be copied into every repo and home this skill 
 Get one at <https://shortpixel.com/free-sign-up>.
 
 ```bash
-python "C:/Users/Precision 7720.ADAL-WORKSTATIO/.claude/skills/optimize-image/scripts/optimize.py" --mode <mode> [--convert <format>] <file1> <file2> ...
+python ".claude/skills/optimize-image/scripts/optimize.py" --mode <mode> [--convert <format>] <file1> <file2> ...
 ```
 
 Pass all resolved absolute file paths as positional arguments. If the run exits `2` with a missing-key

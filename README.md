@@ -4,7 +4,7 @@
 
 **Landing de inscripción · Masterclass de storytelling documental**
 
-![Estado](https://img.shields.io/badge/estado-handoff%20de%20dise%C3%B1o-F2B33D?style=flat-square)
+![Estado](https://img.shields.io/badge/estado-sitio%20est%C3%A1tico-F2B33D?style=flat-square)
 ![Fidelidad](https://img.shields.io/badge/fidelidad-hi--fi-0a0a0a?style=flat-square)
 ![Stack](https://img.shields.io/badge/stack-HTML%20est%C3%A1tico-EFE7DA?style=flat-square)
 ![Idioma](https://img.shields.io/badge/idioma-espa%C3%B1ol-C9A56A?style=flat-square)
@@ -14,24 +14,40 @@ Organizada por **Media Builders** · San Pedro Sula, Honduras · **12 dic 2026**
 </div>
 
 > [!NOTE]
-> Este repositorio es un **paquete de handoff de diseño**: prototipos HTML de referencia para recrear en el stack del proyecto, no código de producción.
+> El sitio publicado es el **sitio estático de `site/`**. Las secciones de diseño más abajo (tokens, pantallas, precios, responsive) siguen siendo la especificación; los archivos del handoff original viven en `design/` solo como referencia (el formulario de 3 pasos se sustituyó por un enlace a Formulario de Google).
+> Guía de edición para colaboradores: [`COLABORADOR.md`](COLABORADOR.md).
 
 ## Inicio rápido
 
-No hay build ni dependencias. Abre `index.html` (bundle autocontenido) en cualquier navegador, o sírvelo localmente:
+El sitio no tiene build ni dependencias. Para verlo en local:
 
 ```bash
-python -m http.server 8000
+python -m http.server 8000 --directory site
 # abrir http://localhost:8000
 ```
+
+O en VS Code: extensión **Live Server** → *Go Live* (la raíz ya apunta a `site/`).
+
+### Herramientas opcionales (solo para comprimir imágenes)
+
+Al clonar el repo, quien vaya a agregar o cambiar imágenes debe instalar **Python 3** y **Pillow**:
+
+```bash
+pip install Pillow
+python tools/optimize_images.py        # comprime todo site/assets/ (JPEG q82, PNG sin pérdida)
+```
+
+No es necesario para ver ni desplegar el sitio. La skill `.claude/skills/optimize-image/` (para Claude Code) usa en cambio la API de ShortPixel y requiere `SHORTPIXEL_API_KEY`; no necesita Pillow.
 
 ## Contenido del repositorio
 
 | Ruta | Descripción |
 |---|---|
-| `index.html` | Bundle autocontenido (assets embebidos). Archivo generado, no editar a mano. |
-| `source/Storycrafters Landing.dc.html` | Fuente editable del prototipo (markup + clase JS con la lógica). Requiere `support.js` e `image-slot.js`, que no se incluyen. |
-| `assets/` | Imágenes del diseño. |
+| `site/` | **El sitio publicado** (`index.html`, `css/`, `js/`, `assets/`, `.htaccess`). Es lo único que se despliega. |
+| `design/` | Referencias del handoff original: `reference-bundle.html` (bundle autocontenido), `Storycrafters Landing.dc.html` (fuente del prototipo; requiere `support.js` e `image-slot.js`, que no se incluyen) y `assets-unused/`. |
+| `tools/optimize_images.py` | Compresión local de imágenes (requiere Pillow). |
+| `.github/workflows/` | Publica el contenido de `site/` en la rama `deploy`, que es la que Hostinger clona. |
+| `COLABORADOR.md` | Flujo de edición para no-desarrolladores. |
 | `CLAUDE.md` | Guía para Claude Code. |
 
 ## Tabla de contenidos
@@ -54,7 +70,7 @@ Público: filmmakers, videógrafos, fotógrafos, creadores de contenido, comunic
 ## About the Design Files
 Los archivos de este paquete son **referencias de diseño hechas en HTML**: prototipos que muestran el aspecto y comportamiento deseados, **no código de producción para copiar tal cual**. La tarea es **recrear este diseño en el entorno del proyecto** (si no existe uno, recomendamos Next.js/Astro + Tailwind, o un sitio estático con un backend ligero para el formulario y pagos).
 
-`index.html` es una versión autocontenida que se abre con doble clic en cualquier navegador. `source/Storycrafters Landing.dc.html` es el archivo fuente (markup con estilos inline + una clase JS con la lógica en el `<script>` final). Ambos sirven como referencia visual y de comportamiento.
+`design/reference-bundle.html` es una versión autocontenida que se abre con doble clic en cualquier navegador. `design/Storycrafters Landing.dc.html` es el archivo fuente (markup con estilos inline + una clase JS con la lógica en el `<script>` final). Ambos sirven como referencia visual y de comportamiento.
 
 ## Fidelity
 **Alta fidelidad (hi-fi).** Colores, tipografía, espaciados, copy e interacciones son finales. Recrear pixel-perfect.
@@ -162,13 +178,13 @@ Botones "← Datos" y "Confirmar inscripción" / "Enviar comprobante".
 - <1180px: sección "Después" pasa a layout apilado.
 - Todo lo demás reflujo con grids `auto-fit` y tipografía `clamp`.
 
-## Assets (`assets/`)
+## Assets (`site/assets/`)
 - `hero-mirada-web.jpg` — hero (color)
 - `bg-playa-web.jpg` — fondo "¿Es para ti?" (B/N)
 - `despues-retrato-web.jpg` — "Después de la masterclass" (color)
 - `bg-mascara-web.jpg` — cierre (color)
 - `luis-emilio-3.jpg`, `eric-salguero.jpg`, `jd-macias.jpg` — expositores (B/N)
-- `luis-emilio.jpg`, `luis-emilio-2.jpg` — fotos alternativas de Luis Emilio (no usadas)
+- `design/assets-unused/` — fotos alternativas de Luis Emilio y `bg-mascara.jpg` (no usadas)
 - `logo-media-builders.png` — logo MB (negro; se invierte a blanco con `filter: invert(1)`)
 Todas las fotos son propiedad de Media Builders. Ya comprimidas (~0.2–0.4 MB, 2400px máx.).
 
@@ -176,6 +192,5 @@ Todas las fotos son propiedad de Media Builders. Ya comprimidas (~0.2–0.4 MB, 
 Logo STORYCRAFTERS · foto de Héctor Galindo · horarios intermedios de agenda · enlace de pago con tarjeta · banco y número de cuenta · plazo de verificación de transferencia · WhatsApp · Instagram / Facebook · políticas de transferencia de cupo y reembolsos · mapa embebido o foto de la sede.
 
 ## Files
-- `index.html` — versión autocontenida (abrir en navegador).
-- `source/Storycrafters Landing.dc.html` — fuente del prototipo (markup + lógica).
-- `assets/` — imágenes.
+- `site/` — sitio publicado.
+- `design/` — referencias del handoff (bundle, fuente del prototipo, imágenes sin usar).
