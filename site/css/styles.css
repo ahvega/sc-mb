@@ -204,7 +204,7 @@ body::before {
 }
 .hero__tagline { font-size: 13px; letter-spacing: .24em; text-transform: uppercase; font-weight: 600; }
 .hero__logo-wrap { margin: 0; line-height: 0; }
-.hero__logo { width: clamp(140px, min(18vw, 28vh), 260px); height: auto; display: block; opacity: .86; filter: drop-shadow(0 6px 24px rgba(0, 0, 0, .55)); }
+.hero__logo { width: clamp(150px, min(22vw, 30vh), 340px); height: auto; display: block; opacity: .86; filter: drop-shadow(0 6px 24px rgba(0, 0, 0, .55)); }
 .hero__info {
   position: relative;
   z-index: 4;
