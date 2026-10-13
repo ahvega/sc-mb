@@ -97,6 +97,8 @@ El grupo de 5 en preventa paga 5 × US$ 59 = **US$ 295** (PayPal lo calcula al e
 
 ## 4. Campos de los formularios
 
+> Cómo construirlos: [`GOOGLE-FORMS.md`](GOOGLE-FORMS.md) (script `tools/google-forms/crear-formularios.gs` y guía manual con lista de pruebas).
+
 Principio: pedir solo lo necesario para el diploma, la logística (camiseta, alimentación) y la facturación. Cada campo extra baja la tasa de conversión.
 
 ### 4.1 Formulario Individual — 2 secciones
@@ -446,7 +448,7 @@ Regla de trabajo: **no se bloquea el desarrollo** esperando respuestas. Todo lo 
 
 ### E. Entregables que debe aportar el dueño al implementar
 
-1. URLs finales de los dos Formularios de Google (formato `https://forms.gle/…`).
+1. URLs finales de los dos Formularios de Google (formato `https://forms.gle/…`), creados con `tools/google-forms/crear-formularios.gs` o a mano según `docs/GOOGLE-FORMS.md`.
 2. Las 7 URLs de pago de PayPal (§5), una por tarifa y tipo, más la de estudiante.
 3. Respuestas a Q1–Q22 (o confirmación de los valores por defecto).
 4. Una compra real de US$ 1 de punta a punta, para dar por cerrado el paso 8 de §7.
