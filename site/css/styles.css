@@ -164,7 +164,7 @@ body::before {
   height: calc(var(--header-h) + clamp(560px, 88vh, 920px));
   pointer-events: none;
 }
-.hero__bg { background: url('../assets/hero-mirada-web.jpg') 62% 40% / cover no-repeat; }
+.hero__bg { background: url('../assets/hero-mirada-web.webp') 62% 40% / cover no-repeat; }
 .hero__shade {
   background:
     linear-gradient(180deg, rgba(10,10,10,.65) 0%, rgba(10,10,10,.15) 28%, rgba(10,10,10,.2) 55%, rgba(10,10,10,.85) 82%, #0a0a0a 100%),
@@ -304,7 +304,7 @@ body::before {
 .audience { position: relative; overflow: hidden; background: var(--bg-alt); }
 .audience__bg, .audience__shade { position: absolute; inset: 0; pointer-events: none; }
 .audience__bg {
-  background: url('../assets/bg-playa-web.jpg') center 40% / cover no-repeat;
+  background: url('../assets/bg-playa-web.webp') center 40% / cover no-repeat;
   opacity: .26;
   filter: grayscale(1);
   mix-blend-mode: luminosity;
@@ -441,7 +441,7 @@ body::before {
 }
 .after__img, .after__shade { position: absolute; inset: 0; pointer-events: none; }
 .after__img {
-  background: url('../assets/despues-retrato-web.jpg') 0% 50% / auto 90% no-repeat;
+  background: url('../assets/despues-retrato-web.webp') 0% 50% / auto 90% no-repeat;
   -webkit-mask-image: linear-gradient(180deg, transparent 3%, #000 12%, #000 88%, transparent 97%);
   mask-image: linear-gradient(180deg, transparent 3%, #000 12%, #000 88%, transparent 97%);
 }
@@ -590,7 +590,7 @@ body::before {
   position: relative;
   overflow: hidden;
   min-height: clamp(420px, 56.25vw, 1000px);
-  background: var(--bg) url('../assets/bg-mascara-web.jpg') 50% 35% / cover no-repeat;
+  background: var(--bg) url('../assets/bg-mascara-web.webp') 50% 35% / cover no-repeat;
   display: flex;
   align-items: flex-end;
 }
@@ -730,7 +730,7 @@ body::before {
     position: static;
     width: 100%;
     aspect-ratio: 2 / 1;
-    background: url('../assets/despues-retrato-web.jpg') 45% 50% / cover no-repeat;
+    background: url('../assets/despues-retrato-web.webp') 45% 50% / cover no-repeat;
     -webkit-mask-image: linear-gradient(180deg, #000 75%, transparent 100%);
     mask-image: linear-gradient(180deg, #000 75%, transparent 100%);
   }
