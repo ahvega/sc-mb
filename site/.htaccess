@@ -21,7 +21,7 @@ Options -Indexes
 
 # Caché: el HTML se revalida siempre (precios/fechas cambian); imágenes largo plazo
 <IfModule mod_headers.c>
-  <FilesMatch "\.html$">
+  <FilesMatch "\.(html|css|js)$">
     Header set Cache-Control "no-cache"
   </FilesMatch>
   <FilesMatch "\.(jpg|jpeg|png|webp|avif|svg|woff2)$">
