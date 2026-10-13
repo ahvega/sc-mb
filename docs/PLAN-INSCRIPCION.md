@@ -1,6 +1,6 @@
 # Plan: inscripción Individual y Grupal con pago PayPal
 
-Estado: **propuesta para aprobación** (no implementado). Fecha: 2026-10-13.
+Estado: **plan completo, listo para implementar con valores por defecto**; las preguntas abiertas están en el §12 y se le hacen al dueño al comenzar la implementación. No implementado. Fecha: 2026-10-13.
 Alcance: `site/` (landing), 2 Formularios de Google, enlaces de pago de PayPal. Sin backend en la fase 1.
 
 ---
@@ -21,17 +21,19 @@ La petición decía: *"al final del formulario un botón de pago que multiplique
 
 Conclusión: se logra el objetivo (inscripción → pago con total calculado → tarjeta) **sin código a medida**, moviendo el botón de pago de "dentro del formulario" a "justo después del formulario". La fase 2 (opcional) es un cálculo exacto con backend PHP, descrita en el §9.
 
-### Decisiones que necesito del dueño (con mi recomendación)
+### Decisiones abiertas y valor por defecto con el que se implementa
 
-| # | Decisión | Recomendación |
+| # | Decisión | Valor por defecto (se usa si el dueño no responde distinto) |
 |---|---|---|
 | D1 | % de descuento grupal | **10 %** sobre el precio individual vigente, redondeado a L 5. Es un parámetro (`data-group-discount`), se cambia en un solo lugar. |
 | D2 | Moneda de cobro | **USD.** No encontré HNL entre las monedas en que PayPal permite *cobrar* (verifícalo en tu panel: Configuración → Moneda). La landing sigue en lempiras y muestra "≈ US$ X" con una tasa fija que tú defines. |
 | D3 | Estudiantes en grupo | La tarifa de estudiante (L 1,700 todo el tiempo) aplica **solo en inscripción individual**. En grupo todos pagan la tarifa grupal; el carné se pide igual en el formulario para validarlo el día del evento. |
 | D4 | Tamaño máximo de grupo | **10** (el selector de PayPal admite un máximo; más de 10 → contacto directo). |
 | D5 | Comisión de PayPal | Decidir si se **absorbe** o se **suma** al precio en USD. Consulta la tabla de comisiones de tu cuenta; incluye comisión por transacción y conversión de moneda. |
-| D7 | Transferencia bancaria como método alterno | **Conservarla** (solo individual) por si PayPal rechaza tarjetas locales; requiere banco/cuenta y plazo de verificación [48 H]. |
 | D6 | Política de reembolso / transferencia de cupo | Sigue pendiente (`[POLÍTICA PENDIENTE]` en FAQ). El formulario exige aceptarla; hay que redactarla antes de abrir ventas. |
+| D7 | Transferencia bancaria como método alterno | **Conservarla** (solo individual) por si PayPal rechaza tarjetas locales; requiere banco/cuenta y plazo de verificación [48 H]. |
+
+Las preguntas completas, con su impacto, están en el **§12**.
 
 ---
 
@@ -393,3 +395,58 @@ Se justifica **solo si** la conciliación manual duele (muchos grupos, errores d
 5. **Tasa y comisión (D2, D5)** son decisiones de negocio.
 
 Fuentes consultadas: documentación de PayPal Developer (Payment Links, Orders v2, JavaScript SDK), guías de ramificación de Google Forms (límites del "ir a sección según respuesta"), repositorio `paypal/AI-Toolkit`, catálogo MCP de Docker, listado de servidores MCP de Google Forms.
+
+---
+
+## 12. Preguntas pendientes para el dueño (hacerlas al iniciar la implementación)
+
+Regla de trabajo: **no se bloquea el desarrollo** esperando respuestas. Todo lo que tiene "Valor por defecto" se implementa con ese valor y se corrige al responder. Las preguntas marcadas **[BLOQUEA]** impiden publicar o cobrar, no programar.
+
+### A. Negocio y precios
+
+| # | Pregunta | Valor por defecto | Dónde impacta |
+|---|---|---|---|
+| Q1 | ¿Qué porcentaje de descuento tendrá la inscripción grupal? | 10 % | `data-group-discount` en `.tiers`; precios en los enlaces de PayPal |
+| Q2 | ¿Mínimo y máximo de personas por grupo? | 2 y 10 | Bucle del formulario grupal; máximo de cantidad en PayPal |
+| Q3 | ¿El descuento grupal aplica en las tres tarifas (Preventa, Regular, Cupos finales)? | Sí, en las tres | Tabla de precios §3; 3 enlaces grupales |
+| Q4 | ¿Los estudiantes pueden unirse a un grupo? Si sí, ¿pagan la tarifa grupal o la de estudiante? | Pueden unirse y pagan la tarifa grupal; la de estudiante (L 1,700) solo individual | Texto de las tarjetas; reglas del formulario |
+| Q5 | ¿Cuándo termina el plazo de grupos? ¿Hay un tope total de cupos (hoy: 40)? | Mismo plazo que las tarifas; tope 40 | Contador de cupos (manual hoy) |
+
+### B. PayPal y cobro **[BLOQUEA el cobro]**
+
+| # | Pregunta | Valor por defecto | Dónde impacta |
+|---|---|---|---|
+| Q6 | ¿Ya existe una cuenta **PayPal Business** verificada? ¿A nombre de quién y en qué país? | No se asume; se crea/verifica antes de los enlaces | Todo el §5 |
+| Q7 | ¿Se cobra en USD? ¿Qué tasa de cambio se congela (L por US$ 1)? | USD, tasa 26.00 | Precios USD de §3 |
+| Q8 | ¿La comisión de PayPal se absorbe o se suma al precio? | Se absorbe | Precios USD |
+| Q9 | ¿El dueño puede cobrar con tarjeta como invitado y retirar a un banco hondureño? (probar con una tarjeta local) | Se prueba en el paso 2 de §7 | Viabilidad del método; decide si Q10 pasa a ser el método principal |
+| Q10 | ¿Se conserva la **transferencia bancaria** como alternativa? Si sí: banco, tipo y número de cuenta, titular, y plazo de verificación (el `[48 H]` pendiente). | Sí, solo individual | Sección de pago; reemplaza los `.pending` BANCO/CUENTA/`[48 H]` |
+| Q11 | ¿A qué correo deben llegar los avisos de pago? ¿Quién concilia pagos contra respuestas y en qué plazo? | Correo del dueño; confirmación en 48 h | Mensajes de confirmación; hoja "Pagos" |
+
+### C. Formularios de Google
+
+| # | Pregunta | Valor por defecto | Dónde impacta |
+|---|---|---|---|
+| Q12 | ¿Qué cuenta de Google será propietaria de los formularios y de las hojas de respuestas? ¿Quiénes más tendrán acceso? | Cuenta del dueño; acceso a 2 personas | Privacidad de datos personales |
+| Q13 | ¿Se pide factura? ¿Se necesita RTN y nombre o razón social? ¿Quién emite el comprobante? | Sí, opcional, con RTN | Sección 3 del individual y sección 1 del grupal |
+| Q14 | ¿Las tallas de camiseta son XS–XXL? ¿Hay guía de tallas para enlazar? | XS, S, M, L, XL, XXL | Pregunta de talla; fecha límite para pedir camisetas |
+| Q15 | ¿Se pide algún dato más (nivel de experiencia, equipo propio, restricciones alimentarias)? | Alimentarias/accesibilidad opcional; resto no | Largo del formulario |
+| Q16 | ¿Qué texto exacto llevan los **consentimientos** (imagen, datos personales)? ¿Hay aviso de privacidad? | Textos genéricos del §4; redactar con asesoría | Casillas obligatorias |
+| Q17 | **Política de reembolso y transferencia de cupo** (hoy `[POLÍTICA PENDIENTE]` ×2 en el FAQ). **[BLOQUEA la apertura de ventas]** | Sin valor por defecto; no se inventa | FAQ, casilla de aceptación, mensaje de confirmación |
+| Q18 | ¿Quién diseña/valida el diploma? ¿Se necesita el nombre exactamente como en el documento de identidad? | Nombre libre, el participante lo escribe como lo quiere ver | Texto de ayuda del campo nombre |
+
+### D. Landing y operación
+
+| # | Pregunta | Valor por defecto | Dónde impacta |
+|---|---|---|---|
+| Q19 | ¿Se muestra el equivalente en dólares ("≈ US$ X") junto al precio en lempiras? | Sí, en la sección de pago | Texto de `#pagar` |
+| Q20 | Textos de la página de agradecimiento (`#gracias`) y contacto de soporte (WhatsApp, correo). Los enlaces de WhatsApp/redes siguen pendientes. | Texto genérico; correo `info@themediabuilders.com` | `#gracias`, FAQ, mensajes de formulario |
+| Q21 | ¿Quién tendrá permiso para cambiar las URLs de pago en `index.html`? | Solo el dueño; el colaborador no | `COLABORADOR.md` |
+| Q22 | ¿Se desea medir conversión (clics en cada CTA, origen del tráfico)? | No en esta fase | Analítica (no incluida) |
+
+### E. Entregables que debe aportar el dueño al implementar
+
+1. URLs finales de los dos Formularios de Google (formato `https://forms.gle/…`).
+2. Las 7 URLs de pago de PayPal (§5), una por tarifa y tipo, más la de estudiante.
+3. Respuestas a Q1–Q22 (o confirmación de los valores por defecto).
+4. Una compra real de US$ 1 de punta a punta, para dar por cerrado el paso 8 de §7.
