@@ -194,24 +194,8 @@ body::before {
   color: var(--accent);
 }
 .hero__tagline { font-size: 13px; letter-spacing: .24em; text-transform: uppercase; font-weight: 600; }
-.hero__logo { width: clamp(200px, 26vw, 340px); height: auto; display: block; }
-.hero__title {
-  position: absolute;
-  left: 0; right: 0;
-  bottom: -1.2vw;
-  text-align: center;
-  font-family: var(--font-display);
-  font-weight: 500;
-  font-size: clamp(64px, 17vw, 300px);
-  line-height: 1;
-  color: var(--accent);
-  letter-spacing: -.005em;
-  transform: perspective(700px) rotateX(16deg) skewX(-7deg);
-  transform-origin: 50% 100%;
-  text-shadow: 0 18px 40px rgba(0, 0, 0, .45);
-  z-index: 3;
-  white-space: nowrap;
-}
+.hero__logo-wrap { margin: 0; line-height: 0; }
+.hero__logo { width: clamp(200px, 26vw, 340px); height: auto; display: block; opacity: .86; filter: drop-shadow(0 6px 24px rgba(0, 0, 0, .55)); }
 .hero__info {
   position: relative;
   z-index: 4;
