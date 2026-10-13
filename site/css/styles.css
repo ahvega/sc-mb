@@ -194,10 +194,7 @@ body::before {
   color: var(--accent);
 }
 .hero__tagline { font-size: 13px; letter-spacing: .24em; text-transform: uppercase; font-weight: 600; }
-.hero__logo-placeholder {
-  width: 220px; height: 64px;
-  display: flex; align-items: center; justify-content: center;
-}
+.hero__logo { width: clamp(200px, 26vw, 340px); height: auto; display: block; }
 .hero__title {
   position: absolute;
   left: 0; right: 0;
