@@ -30,5 +30,5 @@ El sitio vive en la carpeta **`site/`**. Solo lo que está ahí se publica en ht
 - **Imágenes a WebP:** instala [Python](https://www.python.org/downloads/) y Pillow (`pip install Pillow`) y corre `python tools/optimize_images.py` desde la raíz del repo: convierte los JPG/PNG de `site/assets/` a `.webp` y borra el original; luego apunta `index.html` al nombre `.webp`.
 - **CSS/JS:** se revalidan en cada visita, pero si ves un cambio de estilo sin reflejarse, sube el número de `?v=` en los enlaces de `index.html`.
 - **Imágenes reemplazadas:** el navegador las guarda hasta 7 días; si cambias una foto, dale un nombre nuevo para que se vea de inmediato.
-- **Imágenes nuevas:** conviértelas a WebP antes de subirlas (idealmente menos de 150 KB cada una) y guárdalas en `site/assets/`.
+- **Imágenes nuevas (obligatorio):** toda imagen que agregues o reemplaces debe optimizarse siempre; conviértelas a WebP antes de subirlas (idealmente menos de 150 KB cada una) y guárdalas en `site/assets/`.
 - Si algo se rompe después del merge, avisa antes de seguir editando: se puede revertir el PR.
