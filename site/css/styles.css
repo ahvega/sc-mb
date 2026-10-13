@@ -148,7 +148,16 @@ body::before {
 .nav a:hover { color: var(--accent); }
 
 /* ---------- Hero ---------- */
-.hero { position: relative; padding-top: var(--header-h); background: var(--bg); overflow: hidden; }
+.hero {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100svh;
+  padding-top: var(--header-h);
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  overflow: hidden;
+}
 .hero__bg, .hero__shade {
   position: absolute;
   top: 0; left: 0; right: 0;
@@ -161,7 +170,7 @@ body::before {
     linear-gradient(180deg, rgba(10,10,10,.65) 0%, rgba(10,10,10,.15) 28%, rgba(10,10,10,.2) 55%, rgba(10,10,10,.85) 82%, #0a0a0a 100%),
     radial-gradient(120% 90% at 50% 40%, transparent 40%, rgba(10,10,10,.6) 100%);
 }
-.hero__stage { position: relative; height: clamp(560px, 88vh, 920px); overflow: hidden; }
+.hero__stage { position: relative; flex: 1 1 auto; min-height: 300px; }
 .hero__date {
   position: absolute;
   right: clamp(10px, 2.5vw, 36px);
@@ -195,23 +204,24 @@ body::before {
 }
 .hero__tagline { font-size: 13px; letter-spacing: .24em; text-transform: uppercase; font-weight: 600; }
 .hero__logo-wrap { margin: 0; line-height: 0; }
-.hero__logo { width: clamp(200px, 26vw, 340px); height: auto; display: block; opacity: .86; filter: drop-shadow(0 6px 24px rgba(0, 0, 0, .55)); }
+.hero__logo { width: clamp(140px, min(18vw, 28vh), 260px); height: auto; display: block; opacity: .86; filter: drop-shadow(0 6px 24px rgba(0, 0, 0, .55)); }
 .hero__info {
   position: relative;
   z-index: 4;
   max-width: 1240px;
   margin: 0 auto;
-  padding: clamp(36px, 6vw, 72px) clamp(20px, 5vw, 48px) clamp(56px, 8vw, 96px);
+  padding: clamp(20px, 3vh, 36px) clamp(20px, 5vw, 48px) clamp(24px, 4vh, 48px);
+  width: 100%;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
   gap: clamp(32px, 5vw, 72px);
   align-items: end;
 }
-.hero__lead { display: flex; flex-direction: column; gap: 20px; }
+.hero__lead { display: flex; flex-direction: column; gap: clamp(10px, 2vh, 20px); }
 .hero__lead h2 {
   font-family: var(--font-display);
   font-weight: 300;
-  font-size: clamp(34px, 4.6vw, 60px);
+  font-size: clamp(28px, min(4.6vw, 6.4vh), 60px);
   line-height: 1.02;
   text-transform: uppercase;
   text-wrap: balance;
@@ -705,6 +715,15 @@ body::before {
 .sticky-cta .btn { flex: 1; text-align: center; padding: 15px; }
 
 /* ---------- Responsive ---------- */
+/* Pantallas anchas pero bajas (laptops): compacta el hero para que quepa en una sola pantalla */
+@media (min-width: 860px) and (max-height: 760px) {
+  .hero__stage { min-height: 250px; }
+  .hero__lead p { display: none; }
+  .hero__side { gap: 12px; }
+  .facts { gap: 6px 18px; padding-top: 12px; font-size: 14px; }
+  .countdown__time { font-size: 30px; }
+}
+
 @media (max-width: 1179px) {
   .after { flex-direction: column; align-items: stretch; min-height: 0; }
   .after__img {
