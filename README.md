@@ -34,7 +34,7 @@ Al clonar el repo, quien vaya a agregar o cambiar imágenes debe instalar **Pyth
 
 ```bash
 pip install Pillow
-python tools/optimize_images.py        # comprime todo site/assets/ (JPEG q82, PNG sin pérdida)
+python tools/optimize_images.py        # convierte a WebP todo site/assets/ (JPG q80, PNG sin pérdida)
 ```
 
 No es necesario para ver ni desplegar el sitio. La skill `.claude/skills/optimize-image/` (para Claude Code) usa en cambio la API de ShortPixel y requiere `SHORTPIXEL_API_KEY`; no necesita Pillow.
@@ -124,17 +124,17 @@ Escala (fluida con `clamp`):
 ## Screens / Secciones (en orden)
 
 1. **Header fijo**: blur `rgba(10,10,10,.82)` + `backdrop-filter: blur(10px)`; punto ámbar con glow + "STORYCRAFTERS"; nav (≥860px): Programa · Expositores · Agenda · Incluye · Preguntas (anclas); botón "Inscribirme" → `#inscripcion`.
-2. **Hero**: foto a sangre `assets/hero-mirada-web.jpg` (color, `background-position: 62% 40%`, cover) con degradado superior/inferior a negro. Arriba-izquierda: logo Media Builders (PNG invertido a blanco) + "presenta", slot para logo STORYCRAFTERS (en diseño), "Investiga · Estructura · Graba". Fecha vertical a la derecha ("12 · 12 · 2026 — SAN PEDRO SULA", `writing-mode: vertical-rl`). H1 amarillo en perspectiva abajo. Debajo: subtítulo, bajada, CTA "Reserva tu lugar" + "Ver el programa", lista de datos (FECHA/HORA/SEDE/CUPO) y **cuenta regresiva timecode** `DD:HH:MM:SS` hasta 2026-12-12 08:00 (UTC−6).
+2. **Hero**: foto a sangre `assets/hero-mirada-web.webp` (color, `background-position: 62% 40%`, cover) con degradado superior/inferior a negro. Arriba-izquierda: logo Media Builders (WebP invertido a blanco) + "presenta", slot para logo STORYCRAFTERS (en diseño), "Investiga · Estructura · Graba". Fecha vertical a la derecha ("12 · 12 · 2026 — SAN PEDRO SULA", `writing-mode: vertical-rl`). H1 amarillo en perspectiva abajo. Debajo: subtítulo, bajada, CTA "Reserva tu lugar" + "Ver el programa", lista de datos (FECHA/HORA/SEDE/CUPO) y **cuenta regresiva timecode** `DD:HH:MM:SS` hasta 2026-12-12 08:00 (UTC−6).
 3. **Qué es** (`#programa`): titular + 2 columnas de texto + 3 pilares (Aprende / Practica / Llévatelo).
-4. **¿Es para ti?**: fondo `bg-playa-web.jpg` B/N ~26% con degradado; lista A–E; nota ámbar "No necesitas traer cámara…".
+4. **¿Es para ti?**: fondo `bg-playa-web.webp` B/N ~26% con degradado; lista A–E; nota ámbar "No necesitas traer cámara…".
 5. **Expositores** (`#expositores`): 4 tarjetas (foto 4:5 B/N, etiqueta modalidad PRESENCIAL ámbar / VÍA ZOOM hueso, nombre, rol, sesión en mono, bio). Fotos: luis-emilio-3, (Héctor pendiente), eric-salguero, jd-macias.
 6. **Agenda** (`#agenda`): timeline vertical estilo edición. Mañana "Aprende" (V1) y Tarde "Haz" (V2). Bloques de práctica en ámbar sólido. Horarios intermedios `--:--` (pendientes de confirmar).
 7. **Incluye** (`#incluye`): grid de 7 celdas; la 7ª en ámbar.
-8. **Después de la masterclass**: foto `despues-retrato-web.jpg` a color. **≥1180px**: foto de fondo (`auto 90%`, anclada a la izquierda), texto a la derecha `max-width:340px`, degradado lateral suave (máx. .55). **<1180px**: foto 2:1 arriba, texto debajo.
+8. **Después de la masterclass**: foto `despues-retrato-web.webp` a color. **≥1180px**: foto de fondo (`auto 90%`, anclada a la izquierda), texto a la derecha `max-width:340px`, degradado lateral suave (máx. .55). **<1180px**: foto 2:1 arriba, texto debajo.
 9. **La sede**: texto, dirección, plus code GXMW+W59, botón a `https://maps.app.goo.gl/3DXgQzQmvxdWX4Ti9`; slot de mapa/foto.
 10. **Inscripción** (`#inscripcion`): fondo ámbar. Izquierda: tarifas + aviso + contador de cupo. Derecha: formulario en 3 pasos (ver abajo).
 11. **Preguntas** (`#preguntas`): acordeón (una abierta a la vez, ± en mono).
-12. **Cierre**: foto `bg-mascara-web.jpg` **a color**, aspect ~16:9, degradado solo abajo; titular pequeño abajo-izquierda y botón abajo-derecha.
+12. **Cierre**: foto `bg-mascara-web.webp` **a color**, aspect ~16:9, degradado solo abajo; titular pequeño abajo-izquierda y botón abajo-derecha.
 13. **Footer**: logo + "Un programa de [logo MB]", contacto `info@themediabuilders.com`, redes, ©.
 
 Flotantes:
@@ -179,13 +179,13 @@ Botones "← Datos" y "Confirmar inscripción" / "Enviar comprobante".
 - Todo lo demás reflujo con grids `auto-fit` y tipografía `clamp`.
 
 ## Assets (`site/assets/`)
-- `hero-mirada-web.jpg` — hero (color)
-- `bg-playa-web.jpg` — fondo "¿Es para ti?" (B/N)
-- `despues-retrato-web.jpg` — "Después de la masterclass" (color)
-- `bg-mascara-web.jpg` — cierre (color)
-- `luis-emilio-3.jpg`, `eric-salguero.jpg`, `jd-macias.jpg` — expositores (B/N)
+- `hero-mirada-web.webp` — hero (color)
+- `bg-playa-web.webp` — fondo "¿Es para ti?" (B/N)
+- `despues-retrato-web.webp` — "Después de la masterclass" (color)
+- `bg-mascara-web.webp` — cierre (color)
+- `luis-emilio-3.webp`, `eric-salguero.webp`, `jd-macias.webp` — expositores (B/N)
 - `design/assets-unused/` — fotos alternativas de Luis Emilio y `bg-mascara.jpg` (no usadas)
-- `logo-media-builders.png` — logo MB (negro; se invierte a blanco con `filter: invert(1)`)
+- `logo-media-builders.webp` — logo MB (negro; se invierte a blanco con `filter: invert(1)`)
 Todas las fotos son propiedad de Media Builders. Ya comprimidas (~0.2–0.4 MB, 2400px máx.).
 
 ## Pendientes de contenido

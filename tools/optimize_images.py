@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
-"""Comprime imágenes de site/assets/ sin servicios externos (solo requiere Pillow).
+"""Convierte imágenes de site/assets/ a WebP sin servicios externos (solo requiere Pillow).
 
 Uso:
     pip install Pillow
     python tools/optimize_images.py                 # todo site/assets/
     python tools/optimize_images.py ruta/foto.jpg   # archivos o carpetas concretos
 
-JPEG: calidad 82, progresivo. PNG: sin pérdida. Solo reemplaza el original si ahorra al menos 5 %; la
-escritura es atómica (archivo temporal + reemplazo), así que es seguro repetirlo.
+JPG/JPEG -> WebP con pérdida (calidad 80). PNG -> WebP sin pérdida (conserva transparencia).
+El original se borra tras escribir el .webp; después hay que apuntar index.html / styles.css al .webp.
+Los .webp existentes no se tocan, así que es seguro repetirlo.
 """
 import os
 import sys
@@ -31,29 +32,32 @@ def collect(args):
                 yield f
 
 
-def optimize(path):
+def convert(path):
     before = path.stat().st_size
-    tmp = path.with_name(path.name + ".tmp")
+    out = path.with_suffix(".webp")
+    if out.exists():
+        print(f"{path.name:32} OMITIDO: ya existe {out.name}")
+        return before, before, None
+    tmp = out.with_name(out.name + ".tmp")
     with Image.open(path) as im:
         if path.suffix.lower() == ".png":
-            im.save(tmp, format="PNG", optimize=True)
+            im.save(tmp, format="WEBP", lossless=True, quality=100, method=6)
         else:
-            ImageOps.exif_transpose(im).convert("RGB").save(tmp, format="JPEG", quality=82, optimize=True, progressive=True)
-    after = tmp.stat().st_size
-    if after < before * 0.95:  # ahorro mínimo del 5 %: evita recomprimir (y degradar) imágenes ya optimizadas
-        os.replace(tmp, path)
-        return before, after
-    tmp.unlink()
-    return before, before
+            ImageOps.exif_transpose(im).convert("RGB").save(tmp, format="WEBP", quality=80, method=6)
+    os.replace(tmp, out)  # escritura atómica
+    path.unlink()
+    return before, out.stat().st_size, out
 
 
 def main():
     total_before = total_after = 0
     for f in collect(sys.argv[1:]):
-        b, a = optimize(f)
+        b, a, out = convert(f)
+        if out is None:
+            continue
         total_before += b
         total_after += a
-        print(f"{f.name:32} {b // 1024:>6} KB -> {a // 1024:>6} KB")
+        print(f"{f.name:32} {b // 1024:>6} KB -> {out.name} {a // 1024:>6} KB")
     print(f"TOTAL {total_before // 1024} KB -> {total_after // 1024} KB")
 
 
