@@ -109,14 +109,25 @@
     ocupado(true, 'Enviando tu carné…');
     prepararArchivo(archivo)
       .then(function (carne) {
-        if (demo) return new Promise(function (ok) { setTimeout(function () { ok({ ok: true }); }, 900); });
+        if (demo) {
+          // En local se puede simular la decisión con ?carne=Aprobado o ?carne=Rechazado
+          var simulado = new URLSearchParams(location.search).get('carne') || 'Pendiente';
+          return new Promise(function (ok) {
+            setTimeout(function () {
+              ok({ ok: true, estado: simulado, motivo: 'Tu carné muestra vigencia hasta junio de 2026 y ya venció.' });
+            }, 900);
+          });
+        }
         return api('POST', { accion: 'solicitudEstudiante', datos: datos, institucion: form.elements.institucion.value.trim(), carne: carne });
       })
       .then(function (res) {
         ocupado(false);
         if (!res.ok) return error(res.error);
-        q('[data-view="enviado"] [data-ok-nombre]').textContent = datos.nombre.split(' ')[0];
-        q('[data-view="enviado"] [data-ok-correo]').textContent = datos.correo;
+        var estado = res.estado || 'Pendiente';
+        qa('[data-view="enviado"] [data-estado]').forEach(function (el) { el.hidden = el.dataset.estado !== estado; });
+        qa('[data-view="enviado"] [data-ok-nombre]').forEach(function (el) { el.textContent = datos.nombre.split(' ')[0]; });
+        qa('[data-view="enviado"] [data-ok-correo]').forEach(function (el) { el.textContent = datos.correo; });
+        q('[data-view="enviado"] [data-motivo]').textContent = res.motivo || 'Tu carné no está vigente.';
         ver('enviado');
         root.scrollIntoView({ behavior: 'smooth', block: 'start' });
       })
@@ -278,6 +289,13 @@
   }
 
   q('[data-back]').addEventListener('click', function () { ver('datos'); });
+
+  // Carné rechazado: seguir con la tarifa vigente sin volver a llenar los datos
+  q('[data-a-general]').addEventListener('click', function () {
+    form.elements.tipo.value = 'general';
+    actualizarTipo();
+    cargarTarifaVigente();
+  });
 
   function ocupado(si, texto) {
     enviando = si;

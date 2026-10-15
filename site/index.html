@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@200;300;400;500&family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=6">
+  <link rel="stylesheet" href="css/styles.css?v=7">
 </head>
 <body>
 
@@ -414,10 +414,24 @@
       </div>
 
       <!-- 03 · LISTO (solicitud de estudiante enviada) -->
+      <!-- El backend revisa el carné con Claude: data-estado = Pendiente | Aprobado | Rechazado -->
       <div class="insc__view" data-view="enviado" hidden>
-        <p class="insc__rec"><b>●</b> REC · EN REVISIÓN</p>
-        <h3>Recibimos tu <span class="hl">carné</span></h3>
-        <p>Gracias, <span data-ok-nombre></span>. Vamos a revisarlo y te escribiremos a <b data-ok-correo></b>. Si lo aprobamos, te llegará un enlace personal para pagar L 1,700 y confirmar tu lugar.</p>
+        <div data-estado="Pendiente">
+          <p class="insc__rec"><b>●</b> REC · EN REVISIÓN</p>
+          <h3>Recibimos tu <span class="hl">carné</span></h3>
+          <p>Gracias, <span data-ok-nombre></span>. Vamos a revisarlo y te escribiremos a <b data-ok-correo></b>. Si lo aprobamos, te llegará un enlace personal para pagar L 1,700 y confirmar tu lugar.</p>
+        </div>
+        <div data-estado="Aprobado">
+          <p class="insc__rec"><b>●</b> REC · CARNÉ APROBADO</p>
+          <h3>Tu carné fue <span class="hl">aprobado</span></h3>
+          <p>¡Listo, <span data-ok-nombre></span>! Te enviamos a <b data-ok-correo></b> tu enlace personal para pagar L 1,700. Tu lugar se confirma al pagar. Si no lo ves, revisa spam o promociones.</p>
+        </div>
+        <div data-estado="Rechazado">
+          <p class="insc__rec"><b>●</b> REC · CARNÉ NO VIGENTE</p>
+          <h3>No pudimos validar tu <span class="hl">carné</span></h3>
+          <p><span data-motivo></span> Puedes inscribirte con la tarifa vigente; tus datos ya están llenos.</p>
+          <button type="button" class="btn btn--primary insc__submit" data-a-general>Inscribirme con la tarifa vigente →</button>
+        </div>
       </div>
 
       <!-- Sin backend configurado, cupos llenos o enlace inválido -->
@@ -505,6 +519,6 @@
 </div>
 
 <script src="js/script.js?v=2"></script>
-<script src="js/inscripcion.js?v=1"></script>
+<script src="js/inscripcion.js?v=2"></script>
 </body>
 </html>

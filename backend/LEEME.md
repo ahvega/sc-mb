@@ -4,16 +4,21 @@ El formulario de la landing (`site/js/inscripcion.js`) habla con un script de Go
 
 - cobra con **PayPal** (en dólares, el equivalente al precio en Lempiras según `TASA_CAMBIO`),
 - guarda cada inscripción en una hoja de Google y envía el correo de confirmación,
-- recibe las **fotos de carné** de los estudiantes, que alguien del equipo aprueba a mano.
+- recibe las **fotos de carné** de los estudiantes; Claude aprueba o rechaza los casos claros y el equipo revisa los dudosos.
 
 No hay transferencias bancarias: cada persona hace **un solo pago** en línea.
 
 ## Cómo funciona la tarifa de estudiante
 
 1. En la landing, el estudiante elige **Soy estudiante**, llena sus datos y sube la foto de su carné. **No paga todavía.**
-2. La solicitud aparece en la pestaña **Estudiantes** de la hoja (con enlace a la foto, guardada en una carpeta privada de tu Drive). Te llega un aviso a `CORREO_EVENTO`.
-3. Revisas la foto y cambias la columna **Estado** a **Aprobado** o **Rechazado**. Si rechazas, puedes escribir el motivo en **Notas** antes de cambiar el estado: se incluye en el correo.
-4. Al aprobar, el script le envía al estudiante un enlace personal (`?estudiante=CÓDIGO`) que abre directo el pago de L 1,700. El enlace sirve **una sola vez** y solo para esa persona.
+2. La solicitud aparece en la pestaña **Estudiantes** de la hoja (con enlace a la foto, guardada en una carpeta privada de tu Drive).
+3. **Claude revisa el carné al instante** (si `REVISAR_CON_CLAUDE = true` y guardaste la clave, paso 2.6):
+   - Carné estudiantil legible, nombre que coincide y **vigente hoy** → lo aprueba solo.
+   - Legible pero **vencido** → lo rechaza solo; la página le ofrece inscribirse con la tarifa vigente.
+   - Cualquier duda (no se ve la fecha, foto borrosa, nombre distinto, no parece carné) → queda **Pendiente** y te llega un aviso a `CORREO_EVENTO`.
+   Lo que Claude vio queda escrito en la columna **Revisión de Claude**.
+4. Para los pendientes, revisas la foto y cambias **Estado** a **Aprobado** o **Rechazado**. Si rechazas, puedes escribir el motivo en **Notas** antes: se incluye en el correo. También puedes corregir una decisión de Claude cambiando el Estado.
+5. Al aprobar, el script le envía al estudiante un enlace personal (`?estudiante=CÓDIGO`) que abre directo el pago de L 1,700. El enlace sirve **una sola vez** y solo para esa persona.
 
 Sin un carné aprobado no se puede pagar la tarifa de estudiante: el script lo rechaza aunque alguien intente saltarse la página.
 
@@ -32,12 +37,13 @@ Sin un carné aprobado no se puede pagar la tarifa de estudiante: el script lo r
 3. Revisa arriba del código: `WHATSAPP_EQUIPO`, `CORREO_EVENTO`, `TASA_CAMBIO` y cupos.
 4. En la barra de arriba elige la función **instalar** y toca **Ejecutar**. Google te pedirá permisos (hoja, Drive y correo): acéptalos. En el registro aparecerá el enlace de la hoja.
 5. Elige la función **guardarCredencialesPayPal**, pega tu Client ID y tu Secret donde dice `PEGA_AQUI`, deja `'sandbox'` y toca **Ejecutar**. Luego **borra** el Client ID y el Secret del código y guarda.
-6. Toca **Implementar → Nueva implementación → Aplicación web**. Ejecutar como: **Yo**. Quién tiene acceso: **Cualquier usuario**. Toca **Implementar** y copia la URL que termina en `/exec`.
+6. Revisión con Claude: crea una clave en <https://platform.claude.com> (**API keys → Create key**; necesitas una cuenta con saldo, cada revisión cuesta centavos). Elige la función **guardarClaveClaude**, pega la clave donde dice `PEGA_AQUI_TU_CLAVE`, toca **Ejecutar** y luego **bórrala** del código y guarda. Si no quieres revisión automática, pon `REVISAR_CON_CLAUDE = false`.
+7. Toca **Implementar → Nueva implementación → Aplicación web**. Ejecutar como: **Yo**. Quién tiene acceso: **Cualquier usuario**. Toca **Implementar** y copia la URL que termina en `/exec`.
 
 ### 3. Conectar la landing
 En `site/index.html`, en el bloque `<div class="panel insc" id="insc" ...>`:
 
-- `data-apps-script-url="..."`: la URL `/exec` del paso 2.6.
+- `data-apps-script-url="..."`: la URL `/exec` del paso 2.7.
 - `data-paypal-client-id="..."`: el **Client ID** de PayPal (este sí es público; el Secret nunca va en la página).
 
 Mientras estén vacíos, la página publicada muestra "La inscripción en línea abre muy pronto", y en tu computadora (localhost) funciona en modo demo sin cobrar.

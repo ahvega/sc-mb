@@ -58,11 +58,18 @@ const ESTADOS = ['Pendiente', 'Aprobado', 'Rechazado'];
 const COLUMNAS_EST = [
   'Fecha de solicitud', 'Nombre (diploma y gafete)', 'Correo', 'WhatsApp', 'Ciudad', 'Ocupación',
   'Experiencia', 'Talla de camiseta', '¿Cómo se enteró?', 'Restricciones alimentarias',
-  'Acepta comunicaciones', 'Institución', 'Foto del carné', 'Estado', 'Código', 'Correo de respuesta',
-  'Pagado (referencia)', 'Notas',
+  'Acepta comunicaciones', 'Institución', 'Foto del carné', 'Estado', 'Revisión de Claude', 'Código',
+  'Correo de respuesta', 'Pagado (referencia)', 'Notas',
 ];
 const COL_EST = {}; COLUMNAS_EST.forEach(function (c, i) { COL_EST[c] = i + 1; });
 const CARNE_MAX_BYTES = 6 * 1024 * 1024;
+
+// Revisión automática del carné con Claude (API de Anthropic). La clave se guarda con guardarClaveClaude().
+// Claude aprueba solo si el carné es legible, el nombre coincide y está vigente; si está vencido lo rechaza
+// (la persona puede pagar la tarifa normal). En cualquier otro caso queda "Pendiente" para revisión humana.
+// Ponlo en false para revisar todo a mano.
+const REVISAR_CON_CLAUDE = true;
+const CLAUDE_MODELO = 'claude-opus-5-5';
 const CARNE_TIPOS = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif', 'application/pdf'];
 
 // ---------- Instalación (ejecutar una vez) ----------
@@ -154,6 +161,12 @@ function guardarCredencialesPayPal() {
     PAYPAL_ENTORNO: 'sandbox', // cambia a 'live' cuando termines de probar
   });
   Logger.log('Credenciales guardadas. Borra el Client ID y el Secret de este código.');
+}
+
+/** Solo si REVISAR_CON_CLAUDE = true. Guarda la clave de la API de Anthropic. Rellena, ejecuta una vez y bórrala de aquí. */
+function guardarClaveClaude() {
+  PropertiesService.getScriptProperties().setProperty('ANTHROPIC_API_KEY', 'PEGA_AQUI_TU_CLAVE');
+  Logger.log('Clave guardada. Bórrala de este código.');
 }
 
 // ---------- API para la landing ----------
@@ -331,6 +344,7 @@ function solicitudEstudiante(body) {
 
   const lock = LockService.getScriptLock();
   lock.waitLock(25000);
+  let fila;
   try {
     const nombre = limpio(datos.nombre);
     const ext = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/heic': 'heic', 'image/heif': 'heif', 'application/pdf': 'pdf' }[carne.tipo];
@@ -353,7 +367,9 @@ function solicitudEstudiante(body) {
     r['Institución'] = limpio(body.institucion);
     r['Foto del carné'] = archivo.getUrl();
     r['Estado'] = 'Pendiente';
-    hojaEstudiantes().appendRow(COLUMNAS_EST.map(function (c) { return r[c] === undefined ? '' : r[c]; }));
+    const hoja = hojaEstudiantes();
+    hoja.appendRow(COLUMNAS_EST.map(function (c) { return r[c] === undefined ? '' : r[c]; }));
+    fila = hoja.getLastRow();
     SpreadsheetApp.flush();
   } catch (err) {
     console.error(err);
@@ -362,20 +378,133 @@ function solicitudEstudiante(body) {
     lock.releaseLock();
   }
 
-  try {
-    const saludo = limpio(datos.nombre).split(' ')[0];
-    enviarCorreoSimple(datos.correo, 'Recibimos tu carné, ' + saludo, 'Recibimos tu <span>carné</span>',
-      ['Hola, ' + saludo + '. Recibimos tu solicitud de tarifa de estudiante para STORYCRAFTERS.',
-       'Vamos a revisar tu carné y te escribiremos a este correo. Si lo aprobamos, te llegará un enlace personal para pagar L ' +
-       t.hnl.toLocaleString('en-US') + ' y confirmar tu lugar.',
-       'Tu lugar todavía no está reservado: se confirma cuando pagas.']);
-    MailApp.sendEmail(CORREO_EVENTO, 'Nueva solicitud de estudiante: ' + limpio(datos.nombre),
-      'Revisa el carné y cambia el Estado en la pestaña Estudiantes:\n' +
-      SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('HOJA_ID')).getUrl());
-  } catch (err) {
-    console.error('Correo de solicitud no enviado: ' + err);
+  const saludo = limpio(datos.nombre).split(' ')[0];
+
+  // Revisión automática con Claude: aprueba o rechaza solo los casos claros; el resto queda para una persona.
+  let decision = { estado: 'Pendiente' };
+  if (REVISAR_CON_CLAUDE && PropertiesService.getScriptProperties().getProperty('ANTHROPIC_API_KEY')) {
+    try {
+      decision = revisarCarneConClaude(bytes, carne.tipo, limpio(datos.nombre), limpio(body.institucion));
+    } catch (err) {
+      console.error('Revisión con Claude falló: ' + err);
+      decision = { estado: 'Pendiente', nota: 'No se pudo revisar automáticamente: ' + String(err).slice(0, 200) };
+    }
+    const hoja = hojaEstudiantes();
+    hoja.getRange(fila, COL_EST['Revisión de Claude']).setValue(decision.nota || '');
+    if (decision.estado !== 'Pendiente') {
+      if (decision.estado === 'Rechazado') hoja.getRange(fila, COL_EST['Notas']).setValue(decision.motivo);
+      hoja.getRange(fila, COL_EST['Estado']).setValue(decision.estado);
+      // Los cambios hechos por el script no disparan alEditarHoja: se envía el correo aquí.
+      try { procesarEstado(hoja, fila); } catch (err) { console.error('Correo de decisión no enviado: ' + err); }
+    }
   }
-  return json({ ok: true, nombre: limpio(datos.nombre).split(' ')[0] });
+
+  if (decision.estado === 'Pendiente') {
+    try {
+      enviarCorreoSimple(datos.correo, 'Recibimos tu carné, ' + saludo, 'Recibimos tu <span>carné</span>',
+        ['Hola, ' + saludo + '. Recibimos tu solicitud de tarifa de estudiante para STORYCRAFTERS.',
+         'Vamos a revisar tu carné y te escribiremos a este correo. Si lo aprobamos, te llegará un enlace personal para pagar L ' +
+         t.hnl.toLocaleString('en-US') + ' y confirmar tu lugar.',
+         'Tu lugar todavía no está reservado: se confirma cuando pagas.']);
+      MailApp.sendEmail(CORREO_EVENTO, 'Nueva solicitud de estudiante: ' + limpio(datos.nombre),
+        'Revisa el carné y cambia el Estado en la pestaña Estudiantes.\n' +
+        (decision.nota ? 'Revisión de Claude: ' + decision.nota + '\n' : '') +
+        SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('HOJA_ID')).getUrl());
+    } catch (err) {
+      console.error('Correo de solicitud no enviado: ' + err);
+    }
+  }
+  return json({ ok: true, nombre: saludo, estado: decision.estado, motivo: decision.motivo || '' });
+}
+
+/**
+ * Le pide a Claude que lea el carné. Devuelve { estado: 'Aprobado' | 'Rechazado' | 'Pendiente', nota, motivo }.
+ * Solo aprueba si es un carné estudiantil legible, el nombre coincide y está vigente hoy.
+ * Solo rechaza si es legible y está vencido. Todo lo demás queda Pendiente para una persona.
+ */
+function revisarCarneConClaude(bytes, tipo, nombre, institucion) {
+  const IMAGENES = ['image/jpeg', 'image/png', 'image/webp'];
+  let adjunto;
+  if (IMAGENES.indexOf(tipo) >= 0) {
+    adjunto = { type: 'image', source: { type: 'base64', media_type: tipo, data: Utilities.base64Encode(bytes) } };
+  } else if (tipo === 'application/pdf') {
+    adjunto = { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: Utilities.base64Encode(bytes) } };
+  } else {
+    return { estado: 'Pendiente', nota: 'Formato ' + tipo + ' no compatible con la revisión automática.' };
+  }
+
+  const hoy = hoyHN();
+  const instrucciones =
+    'Eres parte del equipo de inscripciones de STORYCRAFTERS, una masterclass en Honduras con tarifa especial para estudiantes. ' +
+    'Revisa la imagen adjunta, que la persona subió como su carné estudiantil vigente.\n\n' +
+    'Datos que escribió en el formulario:\n- Nombre: ' + nombre + '\n- Institución: ' + institucion + '\n' +
+    '- Fecha de hoy (Honduras): ' + hoy + '\n\n' +
+    'Decide:\n' +
+    '1. es_carne_estudiantil: ¿es un carné o credencial de estudiante (universidad, instituto o colegio)? Una cédula, ' +
+    'licencia o carné de empleado no cuenta.\n' +
+    '2. legible: ¿se leen con claridad el nombre y la vigencia?\n' +
+    '3. nombre_coincide: ¿el nombre del carné es la misma persona que el del formulario? Acepta diferencias de tildes, ' +
+    'mayúsculas, orden o nombres y apellidos parciales; no aceptes a otra persona.\n' +
+    '4. vigencia: "vigente" si el carné es válido hoy; "vencido" si su fecha de vencimiento o su periodo académico ya ' +
+    'terminó antes de hoy; "no_se_puede_determinar" si no muestra fecha o periodo, o si no queda claro.\n' +
+    '5. explicacion: una o dos frases en español, dirigidas al estudiante con "tú", diciendo qué viste. ' +
+    'No inventes datos que no aparecen en la imagen.';
+
+  const res = UrlFetchApp.fetch('https://api.anthropic.com/v1/messages', {
+    method: 'post',
+    contentType: 'application/json',
+    muteHttpExceptions: true,
+    headers: {
+      'x-api-key': PropertiesService.getScriptProperties().getProperty('ANTHROPIC_API_KEY'),
+      'anthropic-version': '2023-06-01',
+      'anthropic-beta': 'server-side-fallback-2026-07-01',
+    },
+    payload: JSON.stringify({
+      model: CLAUDE_MODELO,
+      max_tokens: 8000,
+      fallbacks: 'default',
+      output_config: {
+        format: {
+          type: 'json_schema',
+          schema: {
+            type: 'object',
+            properties: {
+              es_carne_estudiantil: { type: 'boolean' },
+              legible: { type: 'boolean' },
+              nombre_en_carne: { type: 'string' },
+              nombre_coincide: { type: 'boolean' },
+              institucion_en_carne: { type: 'string' },
+              vencimiento_en_carne: { type: 'string' },
+              vigencia: { type: 'string', enum: ['vigente', 'vencido', 'no_se_puede_determinar'] },
+              explicacion: { type: 'string' },
+            },
+            required: ['es_carne_estudiantil', 'legible', 'nombre_en_carne', 'nombre_coincide',
+              'institucion_en_carne', 'vencimiento_en_carne', 'vigencia', 'explicacion'],
+            additionalProperties: false,
+          },
+        },
+      },
+      messages: [{ role: 'user', content: [adjunto, { type: 'text', text: instrucciones }] }],
+    }),
+  });
+  if (res.getResponseCode() >= 300) throw new Error('Claude ' + res.getResponseCode() + ': ' + res.getContentText().slice(0, 300));
+  const msg = JSON.parse(res.getContentText());
+  if (msg.stop_reason === 'refusal') return { estado: 'Pendiente', nota: 'Claude no revisó esta imagen.' };
+  const texto = (msg.content || []).filter(function (b) { return b.type === 'text'; }).map(function (b) { return b.text; }).join('');
+  const v = JSON.parse(texto);
+
+  const nota = 'Carné: ' + (v.es_carne_estudiantil ? 'sí' : 'no') + ' · Legible: ' + (v.legible ? 'sí' : 'no') +
+    ' · Nombre: ' + v.nombre_en_carne + (v.nombre_coincide ? ' (coincide)' : ' (NO coincide)') +
+    ' · Institución: ' + v.institucion_en_carne + ' · Vence: ' + (v.vencimiento_en_carne || '—') +
+    ' · ' + v.vigencia + ' · ' + v.explicacion;
+
+  if (v.es_carne_estudiantil && v.legible && v.nombre_coincide && v.vigencia === 'vigente') {
+    return { estado: 'Aprobado', nota: 'Aprobado por Claude. ' + nota };
+  }
+  if (v.es_carne_estudiantil && v.legible && v.vigencia === 'vencido') {
+    return { estado: 'Rechazado', nota: 'Rechazado por Claude (vencido). ' + nota, motivo: v.explicacion };
+  }
+  return { estado: 'Pendiente', nota: 'Para revisión humana. ' + nota };
 }
 
 /** Disparador instalable: al cambiar el Estado de una solicitud, envía el correo al estudiante. */
@@ -412,7 +541,7 @@ function procesarEstado(hoja, fila) {
   } else if (estado === 'Rechazado') {
     const motivo = String(get('Notas')).trim();
     enviarCorreoSimple(correo, 'Sobre tu solicitud de tarifa de estudiante', 'No pudimos validar tu <span>carné</span>',
-      ['Hola, ' + saludo + '. Revisamos tu solicitud y no pudimos validar tu carné' + (motivo ? ': ' + motivo : '.'),
+      ['Hola, ' + saludo + '. Revisamos tu solicitud y no pudimos validar tu carné.' + (motivo ? ' ' + motivo : ''),
        'Puedes enviarnos una nueva foto desde la página o inscribirte con la tarifa vigente. Si tienes dudas, responde este correo.'],
       { texto: 'Ir a la inscripción', url: LANDING_URL + '#inscripcion' });
   } else {

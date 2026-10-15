@@ -579,7 +579,8 @@ body::before {
 .insc__steps li.is-active, .insc__steps li.is-done { border-color: var(--accent); color: var(--accent); }
 .insc__steps li.is-done::after { content: " ✓"; }
 .insc__view { display: flex; flex-direction: column; gap: 24px; }
-.insc__view > p { font-size: 16px; line-height: 1.6; color: var(--text-soft); }
+.insc__view > p, .insc__view > div > p { font-size: 16px; line-height: 1.6; color: var(--text-soft); }
+.insc__view > [data-estado] { display: flex; flex-direction: column; gap: 24px; }
 .insc__view a { color: var(--accent); text-decoration: underline; }
 
 .insc__choice { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid #333; }
