@@ -18,7 +18,7 @@
   var demo = !API && local;
 
   // Solo para el modo demo (localhost sin backend); en producción las tarifas vienen del backend.
-  var TASA_DEMO = 24.70;
+  var TASA_DEMO = 27.03;
   var TARIFAS_DEMO = [
     { id: 'preventa', nombre: 'Preventa', hnl: 1700, hasta: '2026-11-05' },
     { id: 'regular', nombre: 'Regular', hnl: 1900, hasta: '2026-11-25' },

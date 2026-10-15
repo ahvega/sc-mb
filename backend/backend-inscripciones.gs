@@ -21,8 +21,8 @@ const EVENTO = {
 
 // Los precios oficiales son en Lempiras. Solo si la pasarela es PayPal (no acepta Lempiras) se cobra
 // el equivalente en dólares según TASA_CAMBIO (L por 1 USD), redondeado a dólares enteros.
-// Con 24.70: L 1,700 = USD 69 · L 1,900 = USD 77 · L 2,200 = USD 89.
-const TASA_CAMBIO = 24.70;
+// Con 27.03 (venta BCH 15 oct 2026): L 1,700 = USD 63 · L 1,900 = USD 70 · L 2,200 = USD 81.
+const TASA_CAMBIO = 27.03;
 const TARIFAS = {
   preventa:   { nombre: 'Preventa',      hnl: 1700, desde: '2026-01-01', hasta: '2026-11-05' },
   regular:    { nombre: 'Regular',       hnl: 1900, desde: '2026-11-06', hasta: '2026-11-25' },
