@@ -2,7 +2,7 @@
 
 El formulario de la landing (`site/js/inscripcion.js`) habla con un script de Google (`backend-inscripciones.gs`) que:
 
-- cobra con **PayPal** (en dólares, el equivalente al precio en Lempiras según `TASA_CAMBIO`),
+- cobra con **PayPal** (en dólares: US$ 64, 72 u 82 según la fecha; estudiantes US$ 64),
 - guarda cada inscripción en una hoja de Google y envía el correo de confirmación,
 - recibe las **fotos de carné** de los estudiantes; Claude aprueba o rechaza los casos claros y el equipo revisa los dudosos.
 
@@ -18,7 +18,7 @@ No hay transferencias bancarias: cada persona hace **un solo pago** en línea.
    - Cualquier duda (no se ve la fecha, foto borrosa, nombre distinto, no parece carné) → queda **Pendiente** y te llega un aviso a `CORREO_EVENTO`.
    Lo que Claude vio queda escrito en la columna **Revisión de Claude**.
 4. Para los pendientes, revisas la foto y cambias **Estado** a **Aprobado** o **Rechazado**. Si rechazas, puedes escribir el motivo en **Notas** antes: se incluye en el correo. También puedes corregir una decisión de Claude cambiando el Estado.
-5. Al aprobar, el script le envía al estudiante un enlace personal (`?estudiante=CÓDIGO`) que abre directo el pago de L 1,700. El enlace sirve **una sola vez** y solo para esa persona.
+5. Al aprobar, el script le envía al estudiante un enlace personal (`?estudiante=CÓDIGO`) que abre directo el pago de US$ 64. El enlace sirve **una sola vez** y solo para esa persona.
 
 Sin un carné aprobado no se puede pagar la tarifa de estudiante: el script lo rechaza aunque alguien intente saltarse la página.
 
@@ -34,7 +34,7 @@ Sin un carné aprobado no se puede pagar la tarifa de estudiante: el script lo r
 ### 2. Google: instalar el script
 1. Entra a <https://script.google.com> con la cuenta de Gmail que enviará los correos y tocará la hoja.
 2. Abre el proyecto donde ya pegaste el script (o crea uno con **Nuevo proyecto**) y reemplaza todo el código por el de `backend-inscripciones.gs`. Guarda.
-3. Revisa arriba del código: `WHATSAPP_EQUIPO`, `CORREO_EVENTO`, `TASA_CAMBIO` y cupos.
+3. Revisa arriba del código: `WHATSAPP_EQUIPO`, `CORREO_EVENTO`, `TARIFAS` (precios en dólares) y cupos.
 4. En la barra de arriba elige la función **instalar** y toca **Ejecutar**. Google te pedirá permisos (hoja, Drive y correo): acéptalos. En el registro aparecerá el enlace de la hoja.
 5. Elige la función **guardarCredencialesPayPal**, pega tu Client ID y tu Secret donde dice `PEGA_AQUI`, deja `'sandbox'` y toca **Ejecutar**. Luego **borra** el Client ID y el Secret del código y guarda.
 6. Revisión con Claude: crea una clave en <https://platform.claude.com> (**API keys → Create key**; necesitas una cuenta con saldo, cada revisión cuesta centavos). Elige la función **guardarClaveClaude**, pega la clave donde dice `PEGA_AQUI_TU_CLAVE`, toca **Ejecutar** y luego **bórrala** del código y guarda. Si no quieres revisión automática, pon `REVISAR_CON_CLAUDE = false`.

@@ -662,7 +662,6 @@ body::before {
 }
 .insc__back:hover { color: var(--text); }
 .insc__total { font-family: var(--font-display); font-weight: 500; font-size: 28px; color: var(--accent); }
-.insc__usd { font-family: var(--font-mono); font-size: 12px; color: var(--text-dim); }
 .insc__paypal { min-height: 56px; background: #fff; padding: 12px; }
 .insc__paypal:has(> .btn) { background: none; padding: 0; }
 .insc__paypal:empty { display: none; }

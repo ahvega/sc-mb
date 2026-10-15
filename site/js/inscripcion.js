@@ -18,11 +18,10 @@
   var demo = !API && local;
 
   // Solo para el modo demo (localhost sin backend); en producción las tarifas vienen del backend.
-  var TASA_DEMO = 27.03;
   var TARIFAS_DEMO = [
-    { id: 'preventa', nombre: 'Preventa', hnl: 1700, hasta: '2026-11-05' },
-    { id: 'regular', nombre: 'Regular', hnl: 1900, hasta: '2026-11-25' },
-    { id: 'finales', nombre: 'Cupos finales', hnl: 2200, hasta: '2026-12-11' },
+    { id: 'preventa', nombre: 'Preventa', usd: 64, hasta: '2026-11-05' },
+    { id: 'regular', nombre: 'Regular', usd: 72, hasta: '2026-11-25' },
+    { id: 'finales', nombre: 'Cupos finales', usd: 82, hasta: '2026-12-11' },
   ];
 
   var form = root.querySelector('[data-view="datos"]');
@@ -30,7 +29,7 @@
 
   var q = function (sel) { return root.querySelector(sel); };
   var qa = function (sel) { return Array.prototype.slice.call(root.querySelectorAll(sel)); };
-  var lempiras = function (n) { return 'L ' + Number(n).toLocaleString('en-US'); };
+  var dolares = function (n) { return 'US$ ' + Number(n); };
   var escapar = function (s) {
     return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; });
   };
@@ -186,7 +185,7 @@
       var h = hoyHN();
       var t = TARIFAS_DEMO.filter(function (x) { return h <= x.hasta; })[0];
       if (!t) return aviso('Las inscripciones están cerradas.');
-      return mostrarPago(Object.assign({ usd: Math.round(t.hnl / TASA_DEMO) }, t));
+      return mostrarPago(t);
     }
     ocupado(true, 'Cargando…');
     api('GET')
@@ -207,7 +206,7 @@
     q('[data-summary]').innerHTML =
       '<dt>NOMBRE</dt><dd>' + escapar(datos.nombre) + '</dd>' +
       '<dt>TARIFA</dt><dd>' + escapar(t.nombre) + '</dd>' +
-      '<dt>TOTAL</dt><dd><b class="insc__total">' + lempiras(t.hnl) + '</b> <span class="insc__usd">· se cobran US$ ' + t.usd + ' vía PayPal</span></dd>';
+      '<dt>TOTAL</dt><dd><b class="insc__total">' + dolares(t.usd) + '</b></dd>';
     q('[data-back]').hidden = !!codigo;
     ver('pago');
     root.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -223,7 +222,7 @@
       var b = document.createElement('button');
       b.type = 'button';
       b.className = 'btn btn--primary insc__submit';
-      b.textContent = 'Pagar ' + lempiras(tarifa.hnl) + ' (demo, sin cobro) →';
+      b.textContent = 'Pagar ' + dolares(tarifa.usd) + ' (demo, sin cobro) →';
       b.addEventListener('click', function () { confirmar({ pasarela: 'demo', referencia: 'DEMO-' + Date.now() }); });
       return cont.appendChild(b);
     }
@@ -314,7 +313,7 @@
   } else if (codigo) {
     if (demo) {
       datos = { nombre: 'Estudiante de prueba', correo: 'estudiante@ejemplo.com' };
-      mostrarPago({ id: 'estudiante', nombre: 'Estudiante', hnl: 1700, usd: Math.round(1700 / TASA_DEMO), carne: true });
+      mostrarPago({ id: 'estudiante', nombre: 'Estudiante', usd: 64, carne: true });
     } else {
       aviso('Validando tu enlace…');
       api('GET', null, 'codigo=' + encodeURIComponent(codigo))
