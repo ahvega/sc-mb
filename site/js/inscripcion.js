@@ -203,10 +203,22 @@
 
   function mostrarPago(t) {
     tarifa = t;
-    q('[data-summary]').innerHTML =
-      '<dt>NOMBRE</dt><dd>' + escapar(datos.nombre) + '</dd>' +
-      '<dt>TARIFA</dt><dd>' + escapar(t.nombre) + '</dd>' +
-      '<dt>TOTAL</dt><dd><b class="insc__total">' + dolares(t.usd) + '</b></dd>';
+    var resumen = q('[data-summary]');
+    resumen.textContent = '';
+    [['NOMBRE', datos.nombre], ['TARIFA', t.nombre], ['TOTAL', dolares(t.usd)]].forEach(function (fila, i) {
+      var dt = document.createElement('dt'), dd = document.createElement('dd');
+      dt.textContent = fila[0];
+      if (i === 2) {
+        var b = document.createElement('b');
+        b.className = 'insc__total';
+        b.textContent = fila[1];
+        dd.appendChild(b);
+      } else {
+        dd.textContent = fila[1];
+      }
+      resumen.appendChild(dt);
+      resumen.appendChild(dd);
+    });
     q('[data-back]').hidden = !!codigo;
     ver('pago');
     root.scrollIntoView({ behavior: 'smooth', block: 'start' });
