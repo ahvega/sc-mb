@@ -41,6 +41,7 @@ a { color: var(--accent); text-decoration: none; }
 a:hover { color: var(--accent-hover); }
 ::selection { background: var(--accent); color: var(--bg); }
 img { display: block; max-width: 100%; }
+input, textarea, select { text-wrap: wrap; }
 h1, h2, h3, p { margin: 0; }
 section[id] { scroll-margin-top: var(--header-h); }
 
