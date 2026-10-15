@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@200;300;400;500&family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=5">
+  <link rel="stylesheet" href="css/styles.css?v=7">
 </head>
 <body>
 
@@ -149,8 +149,7 @@
 
       <article class="speaker">
         <div class="speaker__photo">
-          <!-- PENDIENTE: foto de Héctor Galindo. Reemplazar el recuadro por <img src="assets/hector-galindo.webp" alt="Héctor Galindo" style="object-position:50% 20%"> -->
-          <div class="speaker__photo-placeholder"><span class="pending">Foto Héctor Galindo</span></div>
+          <img src="assets/hector-galindo.webp" alt="Héctor Galindo" style="object-position:50% 20%">
           <span class="badge">PRESENCIAL</span>
         </div>
         <div class="speaker__id">
@@ -312,14 +311,14 @@
         <div class="tier">
           <span class="tier__name">Estudiantes</span>
           <span class="tier__price">L 1,700</span>
-          <span class="tier__when">Todo el tiempo · con carné · cupos limitados</span>
+          <span class="tier__when">Todo el tiempo · carné aprobado · cupos limitados</span>
           <span class="tier__tag"></span>
         </div>
       </div>
 
       <div class="notice" id="next-price" hidden><span class="notice__tag">AVISO</span><span data-notice-text></span></div>
 
-      <div class="pay-note">PAGO › Tarjeta (enlace seguro) o transferencia bancaria</div>
+      <div class="pay-note">PAGO › Un solo pago en línea con tarjeta de crédito o débito, vía PayPal</div>
 
       <!-- CUPOS: editar a mano por ahora. En producción debería venir de las inscripciones confirmadas.
            El ancho de la barra = lugares disponibles / 40. -->
@@ -332,21 +331,114 @@
       </div>
     </div>
 
-    <!-- PENDIENTE: enlace del Formulario de Google y datos de pago (marcados con recuadro punteado). -->
-    <div class="panel">
-      <h3>Inscríbete en <span class="hl">STORYCRAFTERS</span></h3>
-      <p>Completa el formulario de inscripción. Tu lugar queda confirmado una vez recibido el pago.</p>
-      <a href="#" class="btn btn--primary" id="signup-link" target="_blank" rel="noopener">Ir al formulario de inscripción ↗</a>
-      <span class="panel__small">Enlace del formulario: <span class="pending">[URL DEL FORMULARIO DE GOOGLE]</span></span>
+    <!-- INSCRIPCIÓN EN 3 PASOS (js/inscripcion.js).
+         data-apps-script-url: URL de la aplicación web de Apps Script (termina en /exec); ver backend/LEEME.md.
+         data-paypal-client-id: Client ID de la app de PayPal (es público; el Secret va solo en Apps Script).
+         Sin URL: en localhost funciona en modo demo; publicado muestra "la inscripción abre pronto". -->
+    <div class="panel insc" id="insc" data-apps-script-url="" data-paypal-client-id="">
+      <ol class="insc__steps" aria-hidden="true">
+        <li data-step="1" class="is-active">01 Datos</li>
+        <li data-step="2">02 Pago</li>
+        <li data-step="3">03 Listo</li>
+      </ol>
 
-      <dl class="pay">
-        <dt>TARJETA</dt><dd>Enlace de pago seguro: <span class="pending">[URL DEL ENLACE DE PAGO]</span></dd>
-        <dt>BANCO</dt><dd><span class="pending">[BANCO]</span></dd>
-        <dt>CUENTA</dt><dd><span class="pending">[NÚMERO DE CUENTA]</span></dd>
-        <dt>A NOMBRE DE</dt><dd>Media Builders, S. de R.L. de C.V.</dd>
-        <dt>REFERENCIA</dt><dd>Tu nombre completo</dd>
-      </dl>
-      <p class="panel__small">Pago por transferencia: tu lugar queda apartado mientras verificamos el pago (hasta <span class="pending">[48 H]</span>). Estudiantes: tarifa de L 1,700; deben presentar su carné vigente el día del evento (cupos limitados).</p>
+      <!-- 01 · DATOS -->
+      <form class="insc__view" data-view="datos" novalidate>
+        <h3>Inscríbete en <span class="hl">STORYCRAFTERS</span></h3>
+        <div class="insc__choice" role="radiogroup" aria-label="Tipo de inscripción">
+          <label><input type="radio" name="tipo" value="general" checked><span>Inscripción general</span></label>
+          <label><input type="radio" name="tipo" value="estudiante"><span>Soy estudiante</span></label>
+        </div>
+        <div class="insc__grid">
+          <div class="field field--full"><label for="f-nombre">Nombre completo * <small>como saldrá en tu diploma</small></label><input id="f-nombre" name="nombre" autocomplete="name" required maxlength="80"></div>
+          <div class="field"><label for="f-correo">Correo *</label><input id="f-correo" name="correo" type="email" autocomplete="email" required></div>
+          <div class="field"><label for="f-whatsapp">WhatsApp *</label><input id="f-whatsapp" name="whatsapp" type="tel" autocomplete="tel" placeholder="+504" required pattern="^\+?[0-9 ()\-]{8,20}$"></div>
+          <div class="field"><label for="f-ciudad">Ciudad *</label><input id="f-ciudad" name="ciudad" autocomplete="address-level2" required></div>
+          <div class="field"><label for="f-ocupacion">Ocupación *</label>
+            <select id="f-ocupacion" name="ocupacion" required>
+              <option value="">Selecciona…</option>
+              <option>Filmmaker / cineasta</option><option>Videógrafo/a</option><option>Fotógrafo/a</option>
+              <option>Creador/a de contenido</option><option>Comunicador/a (marca, ONG o iglesia)</option>
+              <option>Estudiante</option><option>Otro</option>
+            </select></div>
+          <div class="field"><label for="f-experiencia">Experiencia *</label>
+            <select id="f-experiencia" name="experiencia" required>
+              <option value="">Selecciona…</option>
+              <option>Estoy empezando (menos de 1 año)</option><option>Intermedia (1 a 3 años)</option><option>Avanzada (más de 3 años)</option>
+            </select></div>
+          <div class="field"><label for="f-talla">Talla de camiseta *</label>
+            <select id="f-talla" name="talla" required>
+              <option value="">Selecciona…</option>
+              <option>XS</option><option>S</option><option>M</option><option>L</option><option>XL</option><option>XXL</option>
+            </select></div>
+          <div class="field field--full"><label for="f-como">¿Cómo te enteraste?</label>
+            <select id="f-como" name="comoSeEntero">
+              <option value="">Selecciona…</option>
+              <option>Instagram</option><option>Facebook</option><option>WhatsApp</option><option>Universidad</option>
+              <option>Un amigo o colega</option><option>Comunidad creativa</option><option>Otro</option>
+            </select></div>
+          <div class="field field--full"><label for="f-restricciones">Restricciones alimentarias</label><input id="f-restricciones" name="restricciones" maxlength="200"></div>
+
+          <!-- Solo estudiantes -->
+          <div class="field field--full" data-student hidden><label for="f-institucion">Universidad o instituto *</label><input id="f-institucion" name="institucion" maxlength="120"></div>
+          <div class="field field--full" data-student hidden>
+            <label for="f-carne">Foto de tu carné vigente *</label>
+            <input id="f-carne" name="carne" type="file" accept="image/*,application/pdf" class="insc__file">
+            <small class="insc__hint">Que se vean tu nombre, la institución y la vigencia. JPG, PNG o PDF.</small>
+          </div>
+
+          <label class="insc__check field--full"><input type="checkbox" name="comunicaciones" required> Acepto recibir comunicaciones sobre el evento *</label>
+        </div>
+        <p class="insc__note" data-student hidden>Revisamos tu carné y, si está todo bien, te enviamos por correo un enlace personal para pagar <b>L 1,700</b>. Tu lugar se confirma al pagar.</p>
+        <button class="btn btn--primary insc__submit" type="submit" data-label-general="Continuar al pago →" data-label-student="Enviar mi carné para revisión →">Continuar al pago →</button>
+        <p class="insc__error" role="alert"></p>
+      </form>
+
+      <!-- 02 · PAGO -->
+      <div class="insc__view" data-view="pago" hidden>
+        <button class="insc__back" type="button" data-back>← Editar mis datos</button>
+        <h3>Confirma tu <span class="hl">pago</span></h3>
+        <dl class="pay" data-summary></dl>
+        <div class="insc__paypal" data-paypal></div>
+        <p class="panel__small">Pago único y seguro con tarjeta de crédito o débito, o con tu cuenta PayPal. PayPal cobra en dólares el equivalente al precio en Lempiras.</p>
+        <p class="insc__error" role="alert"></p>
+        <p class="insc__loading" data-loading hidden>Confirmando tu pago</p>
+      </div>
+
+      <!-- 03 · LISTO (pagado) -->
+      <div class="insc__view" data-view="ok" hidden>
+        <p class="insc__rec"><b>●</b> REC · 12.12.2026 · SAN PEDRO SULA</p>
+        <h3>¡<span data-ok-nombre>Listo</span>, tu lugar está <span class="hl">confirmado</span>!</h3>
+        <p>Recibimos tu pago. En unos segundos te llega un correo de confirmación a <b data-ok-correo></b>. Si no lo ves, revisa spam o promociones.</p>
+        <p>Nos vemos el sábado 12 de diciembre en Estudios Alfa y Omega Visión, San Pedro Sula.</p>
+      </div>
+
+      <!-- 03 · LISTO (solicitud de estudiante enviada) -->
+      <!-- El backend revisa el carné con Claude: data-estado = Pendiente | Aprobado | Rechazado -->
+      <div class="insc__view" data-view="enviado" hidden>
+        <div data-estado="Pendiente">
+          <p class="insc__rec"><b>●</b> REC · EN REVISIÓN</p>
+          <h3>Recibimos tu <span class="hl">carné</span></h3>
+          <p>Gracias, <span data-ok-nombre></span>. Vamos a revisarlo y te escribiremos a <b data-ok-correo></b>. Si lo aprobamos, te llegará un enlace personal para pagar L 1,700 y confirmar tu lugar.</p>
+        </div>
+        <div data-estado="Aprobado">
+          <p class="insc__rec"><b>●</b> REC · CARNÉ APROBADO</p>
+          <h3>Tu carné fue <span class="hl">aprobado</span></h3>
+          <p>¡Listo, <span data-ok-nombre></span>! Te enviamos a <b data-ok-correo></b> tu enlace personal para pagar L 1,700. Tu lugar se confirma al pagar. Si no lo ves, revisa spam o promociones.</p>
+        </div>
+        <div data-estado="Rechazado">
+          <p class="insc__rec"><b>●</b> REC · CARNÉ NO VIGENTE</p>
+          <h3>No pudimos validar tu <span class="hl">carné</span></h3>
+          <p><span data-motivo></span> Puedes inscribirte con la tarifa vigente; tus datos ya están llenos.</p>
+          <button type="button" class="btn btn--primary insc__submit" data-a-general>Inscribirme con la tarifa vigente →</button>
+        </div>
+      </div>
+
+      <!-- Sin backend configurado, cupos llenos o enlace inválido -->
+      <div class="insc__view" data-view="aviso" hidden>
+        <h3>Inscríbete en <span class="hl">STORYCRAFTERS</span></h3>
+        <p data-aviso-texto>La inscripción en línea abre muy pronto. Mientras tanto, escríbenos a <a href="mailto:info@themediabuilders.com">info@themediabuilders.com</a>.</p>
+      </div>
     </div>
 
   </div>
@@ -427,5 +519,6 @@
 </div>
 
 <script src="js/script.js?v=2"></script>
+<script src="js/inscripcion.js?v=2"></script>
 </body>
 </html>

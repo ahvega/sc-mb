@@ -11,6 +11,7 @@ The STORYCRAFTERS landing page (one-day documentary-storytelling masterclass by 
 ## Layout
 
 - `site/` — **the live site; the only thing deployed.** `index.html`, `css/styles.css`, `js/script.js`, `assets/`, `.htaccess`.
+- `backend/` — Google Apps Script for registrations and payments (pasted into script.google.com by hand; never deployed with the site).
 - `design/` — reference only, never deployed: `Storycrafters Landing.dc.html` (original DC-format source, can't render standalone — its runtime is absent), `reference-bundle.html` (original self-contained bundle, useful for visual comparison), `assets-unused/`.
 - `.github/workflows/publish-deploy-branch.yml` — on push to `main` touching `site/**`, force-pushes the contents of `site/` to the `deploy` branch.
 
@@ -30,7 +31,7 @@ Hostinger Git auto-deploy tracks the **`deploy`** branch (not `main`) of `ahvega
 
 ## Gotchas
 
-- Pending content is marked `.pending` (dashed box): logo, Héctor Galindo's photo, venue map, Google Form URL, payment link, bank details, WhatsApp/social links, `[48 H]`, and two FAQ policies (`[POLÍTICA PENDIENTE]`). Don't invent these.
-- The original design had a 3-step in-page form (data → payment → confirmation) with no backend. The static port replaces it with a link to a Google Form plus payment details; do not reintroduce a fake form that submits nowhere.
+- Pending content is marked `.pending` (dashed box): logo, venue map, WhatsApp/social links, and two FAQ policies (`[POLÍTICA PENDIENTE]`). Don't invent these.
+- Registration is a 3-step in-page form (`site/js/inscripcion.js`: data → PayPal → done) backed by Google Apps Script (`backend/backend-inscripciones.gs`, setup in `backend/LEEME.md`). Config is `data-apps-script-url` / `data-paypal-client-id` on `#insc`; empty = demo on localhost, "opens soon" notice in production. One online payment per person, no bank transfers. Student rate requires a carné photo approved by Claude (auto-approves clear valid ones, auto-rejects clearly expired ones, `REVISAR_CON_CLAUDE`) or a human in the "Estudiantes" sheet tab; approval emails a one-time `?estudiante=CODE` link, and the backend rejects the student rate without an approved code.
 - Spots counter is hand-edited; in production it should come from confirmed registrations.
 - This directory is its own git repo (`ahvega/sc-mb`, public), nested inside the parent `legg-profile` checkout.
