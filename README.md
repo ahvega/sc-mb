@@ -45,6 +45,7 @@ No es necesario para ver ni desplegar el sitio. La skill `.claude/skills/optimiz
 |---|---|
 | `site/` | **El sitio publicado** (`index.html`, `css/`, `js/`, `assets/`, `.htaccess`). Es lo único que se despliega. |
 | `design/` | Referencias del handoff original: `reference-bundle.html` (bundle autocontenido), `Storycrafters Landing.dc.html` (fuente del prototipo; requiere `support.js` e `image-slot.js`, que no se incluyen) y `assets-unused/`. |
+| `backend/` | Script de Google (Apps Script) para inscripciones, pagos con PayPal y carnés de estudiante. Instalación: [`backend/LEEME.md`](backend/LEEME.md). |
 | `tools/optimize_images.py` | Compresión local de imágenes (requiere Pillow). |
 | `.github/workflows/` | Publica el contenido de `site/` en la rama `deploy`, que es la que Hostinger clona. |
 | `COLABORADOR.md` | Flujo de edición para no-desarrolladores. |
@@ -189,7 +190,7 @@ Botones "← Datos" y "Confirmar inscripción" / "Enviar comprobante".
 Todas las fotos son propiedad de Media Builders. Ya comprimidas (~0.2–0.4 MB, 2400px máx.).
 
 ## Pendientes de contenido
-Logo STORYCRAFTERS · foto de Héctor Galindo · horarios intermedios de agenda · enlace de pago con tarjeta · banco y número de cuenta · plazo de verificación de transferencia · WhatsApp · Instagram / Facebook · políticas de transferencia de cupo y reembolsos · mapa embebido o foto de la sede.
+Logo STORYCRAFTERS · horarios intermedios de agenda · instalar el backend de inscripciones y las claves de PayPal (`backend/LEEME.md`) · WhatsApp · Instagram / Facebook · políticas de transferencia de cupo y reembolsos · mapa embebido o foto de la sede.
 
 ## Files
 - `site/` — sitio publicado.
