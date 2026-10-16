@@ -806,6 +806,20 @@ body::before {
 }
 .chat__toggle:hover { background: #fff; }
 .chat__status { width: 8px; height: 8px; border-radius: 50%; background: #2fb26a; }
+.chat__panel a.chat__wa-link { border-color: #1da851; color: #128c48; }
+.chat__panel a.chat__wa-link:hover { background: #25d366; color: #fff; }
+.wa-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #25d366;
+  color: #fff;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .45);
+  transition: transform .2s ease, background .2s ease;
+}
+.wa-btn:hover { background: #1ebe5b; color: #fff; transform: scale(1.06); }
 
 /* ---------- Barra fija para móvil ---------- */
 .sticky-cta {

@@ -33,7 +33,7 @@ Object.keys(TARIFAS).forEach(function (k) {
   TARIFAS[k].usd = Math.round(TARIFAS[k].hnl / TASA_CAMBIO);
 });
 
-const WHATSAPP_EQUIPO = '+504 [NÚMERO]';
+const WHATSAPP_EQUIPO = '+504 9252-0327';
 
 // Modo de prueba: acepta pagos ficticios (pasarela "prueba") para probar la hoja y el correo.
 // Ponlo en false antes de abrir inscripciones reales.
