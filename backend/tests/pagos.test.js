@@ -56,11 +56,11 @@ test('reintento con la misma clave de idempotencia devuelve el mismo registro si
   assert.equal(env.correos.length, 1); // un solo correo de "datos recibidos"
 });
 
-test('más de 3 preinscripciones del mismo correo el mismo día se rechazan', () => {
+test('más de 3 preinscripciones del mismo correo el mismo día se rechazan, con o sin clave', () => {
   const env = crearEntorno();
   for (let i = 1; i <= 3; i++) assert.equal(pre(env, { idempotencia: 'k' + i }).ok, true);
-  const r4 = pre(env, { idempotencia: 'k4' });
-  assert.equal(r4.ok, false);
+  assert.equal(pre(env, { idempotencia: 'k4' }).ok, false);
+  assert.equal(pre(env).ok, false); // omitir la clave no elude el límite
 });
 
 // ---------- iniciarPago: intento antes de cobrar, bloqueo de cambio de método ----------
@@ -146,6 +146,23 @@ test('subirComprobante rechaza token inválido y acepta el válido una sola vez'
   const n = hN.getLastRow() - 1;
   const wa = hN.getRange(2, 1, n, 10).getValues().filter(r => r[2] === 'whatsapp' && r[3] === 'comprobante-equipo-v1');
   assert.equal(wa[0][4], 'manual');
+});
+
+test('reabrir iniciarPago transferencia tras subir emite token nuevo (resubida controlada)', () => {
+  const env = crearEntorno(BANCO);
+  const regId = pre(env).registrationId;
+  const i1 = post(env, { accion: 'iniciarPago', registrationId: regId, metodo: 'transferencia' });
+  const b64 = Buffer.from('imagen').toString('base64');
+  const arch = { nombre: 'c.png', tipo: 'image/png', base64: b64 };
+  assert.equal(post(env, { accion: 'subirComprobante', registrationId: regId, token: i1.token, archivo: arch }).ok, true);
+  // el participante decide reemplazar el comprobante: nuevo iniciarPago devuelve token nuevo
+  const i2 = post(env, { accion: 'iniciarPago', registrationId: regId, metodo: 'transferencia' });
+  assert.equal(i2.ok, true);
+  assert.equal(i2.comprobante, 'recibido');
+  assert.ok(i2.token);
+  assert.notEqual(i2.token, i1.token);
+  assert.equal(post(env, { accion: 'subirComprobante', registrationId: regId, token: i2.token, archivo: arch }).ok, true);
+  assert.equal(env.archivos.length, 2);
 });
 
 test('subirComprobante rechaza tipo y tamaño inválidos', () => {
@@ -246,6 +263,15 @@ test('confirmarPago con cupo lleno no da el lugar: queda para devolución, sin b
   // el movimiento quedó en el ledger para gestionar la devolución
   const acr = env.hoja('Acreditaciones');
   assert.match(String(acr.getRange(2, env.colIndex('Acreditaciones', 'Estado')).getValue()), /Sin cupo/);
+
+  // Si luego se libera un lugar, el MISMO settlement puede reintentarse y sí acredita
+  h.getRange(2, col(env, 'Estatus de Pago')).setValue('Cancelado'); // se liberó un lugar
+  h.getRange(2, col(env, 'Referencia de pago')).setValue('PENDIENTE');
+  const r2 = env.ctx.confirmarPago(42, { metodo: 'Transferencia', referencia: 'DEP-9', monto: 1700, moneda: 'HNL', confirmo: true });
+  assert.equal(r2.ok, true);
+  assert.equal(h.getRange(42, col(env, 'Estatus de Pago')).getValue(), 'Completado');
+  assert.match(String(acr.getRange(2, env.colIndex('Acreditaciones', 'Estado')).getValue()), /Acreditado/);
+  assert.equal(env.correos.length, 1); // bienvenida al confirmar de verdad
 });
 
 test('confirmarPago consume el código de estudiante una sola vez', () => {
@@ -265,6 +291,10 @@ test('confirmarPago consume el código de estudiante una sola vez', () => {
   // el enlace quedó consumido
   const v = env.json(env.ctx.doGet({ parameter: { codigo: codigo } }));
   assert.equal(v.ok, false);
+  // y el código consumido no puede generar una segunda preinscripción
+  const r2 = env.json(env.ctx.preinscripcion({ accion: 'preinscripcion', tarifa: 'estudiante', codigo: codigo }));
+  assert.equal(r2.ok, false);
+  assert.match(r2.error, /ya se usó/);
 });
 
 // ---------- migración y lista de espera ----------
@@ -292,6 +322,12 @@ test('migrar asigna Registration ID y traduce el estado legado sin reenviar bien
   env.ctx.procesarNotificaciones();
   assert.equal(env.correos.length, 0); // la bienvenida vieja se sembró como enviada, no se repite
   assert.equal(env.ctx.contarInscritos().total, 1); // solo la fila completada cuenta
+  // el ledger sembró la referencia vieja: no puede reutilizarse para acreditar otra fila
+  const acr = env.hoja('Acreditaciones');
+  assert.equal(acr.getRange(2, env.colIndex('Acreditaciones', 'Settlement key')).getValue(), 'PayPal:TXN-VIEJA');
+  // y las vistas cuentan por Estatus de Pago (con fallback legado)
+  const formula = env.hoja('Control').getRange(3, 2).getValue();
+  assert.match(String(formula), /Completado/);
 });
 
 test('listaEspera guarda nombre, correo y WhatsApp, y deduplica por correo', () => {

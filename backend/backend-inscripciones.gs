@@ -119,45 +119,7 @@ function instalar() {
       .setDataValidation(SpreadsheetApp.newDataValidation().requireCheckbox().build());
   });
 
-  const col = function (c) { return 'Inscritos!' + letra(COL[c]) + '2:' + letra(COL[c]); };
-  // Las filas con pago PENDIENTE (botón de PayPal sin verificar) no cuentan como inscritos
-  const pagado = col('Referencia de pago') + ',"<>' + PAGO_PENDIENTE + '"';
-
-  const control = ss.getSheetByName('Control') || ss.insertSheet('Control');
-  control.clear();
-  const filas = [
-    ['STORYCRAFTERS · Control', ''],
-    ['Cupo total', EVENTO.cupo],
-    ['Inscritos pagados', '=COUNTA(' + col('Referencia de pago') + ')-COUNTIF(' + col('Referencia de pago') + ',"' + PAGO_PENDIENTE + '")'],
-    ['Cupos disponibles', '=B2-B3'],
-    ['Ingresos (L)', '=SUMIFS(' + col('Precio (L)') + ',' + pagado + ')'],
-    ['Cobrado en USD (solo PayPal)', '=SUMIFS(' + col('Monto cobrado') + ',' + col('Moneda') + ',"USD",' + pagado + ')'],
-    ['Pagos por verificar en PayPal', '=COUNTIF(' + col('Referencia de pago') + ',"' + PAGO_PENDIENTE + '")'],
-    ['Por tarifa', ''],
-    ['Preventa', '=COUNTIFS(' + col('Tarifa') + ',"Preventa",' + pagado + ')'],
-    ['Regular', '=COUNTIFS(' + col('Tarifa') + ',"Regular",' + pagado + ')'],
-    ['Cupos finales', '=COUNTIFS(' + col('Tarifa') + ',"Cupos finales",' + pagado + ')'],
-    ['Estudiante', '=COUNTIFS(' + col('Tarifa') + ',"Estudiante",' + pagado + ')'],
-    ['', ''],
-    ['Pedido de camisetas', 'Cantidad'],
-  ];
-  ['XS', 'S', 'M', 'L', 'XL', 'XXL'].forEach(function (t) {
-    filas.push([t, '=COUNTIFS(' + col('Talla de camiseta') + ',"' + t + '",' + pagado + ')']);
-  });
-  filas.push(['Total', '=SUM(B15:B20)']);
-  control.getRange(1, 1, filas.length, 2).setValues(filas);
-  control.getRange('A1').setFontWeight('bold').setFontSize(14);
-  control.getRange('A8:B8').setFontWeight('bold');
-  control.getRange('A14:B14').setFontWeight('bold');
-  control.setColumnWidth(1, 220);
-
-  // Pestaña para combinar correspondencia de gafetes (nombre, ocupación, ciudad)
-  const gafetes = ss.getSheetByName('Gafetes') || ss.insertSheet('Gafetes');
-  gafetes.clear();
-  gafetes.getRange('A1').setFormula(
-    '=QUERY(Inscritos!A:Q,"select B, F, E, H, L where B is not null and Q <> \'' + PAGO_PENDIENTE + '\' label B \'Nombre\', F \'Ocupación\', ' +
-      'E \'Ciudad\', H \'Talla\', L \'Tarifa\'",1)'
-  );
+  rehacerVistas(ss);
 
   // Pestaña de solicitudes de estudiante (se revisan a mano)
   const est = ss.getSheetByName('Estudiantes') || ss.insertSheet('Estudiantes');
@@ -223,6 +185,63 @@ function asegurarEsquema() {
     props.setProperty('CARPETA_COMPROBANTES_ID', DriveApp.createFolder('Comprobantes STORYCRAFTERS · 12 dic 2026').getId());
   }
   props.setProperty('ESQUEMA_PAGOS_V2', '1');
+}
+
+/**
+ * Reescribe las fórmulas de Control y Gafetes. Desde #20 la fuente de verdad es
+ * "Estatus de Pago" = Completado; el segundo término de cada fórmula conserva las filas
+ * legadas (Estatus vacío + referencia real ≠ PENDIENTE) para hojas aún sin migrar.
+ * Una referencia escrita a mano en una fila Pendiente NUNCA entra a Control ni a Gafetes.
+ */
+function rehacerVistas(ss) {
+  const col = function (c) { return 'Inscritos!' + letra(COL[c]) + '2:' + letra(COL[c]); };
+  const cEst = col('Estatus de Pago');
+  const cRef = col('Referencia de pago');
+  const pagado = cEst + ',"Completado"';
+  const legado = cRef + ',"<>' + PAGO_PENDIENTE + '",' + cRef + ',"<>",' + cEst + ',""';
+  const ambas = function (extra) { // COUNTIFS por estatus + filas legadas
+    return ') + COUNTIFS(' + legado + (extra ? ',' + extra : '');
+  };
+
+  const control = ss.getSheetByName('Control') || ss.insertSheet('Control');
+  control.clear();
+  const filas = [
+    ['STORYCRAFTERS · Control', ''],
+    ['Cupo total', EVENTO.cupo],
+    ['Inscritos pagados', '=COUNTIF(' + cEst + ',"Completado"' + ambas() + ')'],
+    ['Cupos disponibles', '=B2-B3'],
+    ['Ingresos (L)', '=SUMIFS(' + col('Precio (L)') + ',' + pagado + ') + SUMIFS(' + col('Precio (L)') + ',' + legado + ')'],
+    ['Cobrado en USD (solo PayPal)', '=SUMIFS(' + col('Monto cobrado') + ',' + col('Moneda') + ',"USD",' + pagado + ') + SUMIFS(' + col('Monto cobrado') + ',' + col('Moneda') + ',"USD",' + legado + ')'],
+    // Pendiente nuevo esquema + pendiente legado (ref PENDIENTE sin estatus todavía)
+    ['Pagos por verificar', '=COUNTIF(' + cEst + ',"Pendiente") + COUNTIFS(' + cRef + ',"' + PAGO_PENDIENTE + '",' + cEst + ',"")'],
+    ['Por tarifa', ''],
+    ['Preventa', '=COUNTIFS(' + col('Tarifa') + ',"Preventa",' + pagado + ambas(col('Tarifa') + ',"Preventa"') + ')'],
+    ['Regular', '=COUNTIFS(' + col('Tarifa') + ',"Regular",' + pagado + ambas(col('Tarifa') + ',"Regular"') + ')'],
+    ['Cupos finales', '=COUNTIFS(' + col('Tarifa') + ',"Cupos finales",' + pagado + ambas(col('Tarifa') + ',"Cupos finales"') + ')'],
+    ['Estudiante', '=COUNTIFS(' + col('Tarifa') + ',"Estudiante",' + pagado + ambas(col('Tarifa') + ',"Estudiante"') + ')'],
+    ['', ''],
+    ['Pedido de camisetas', 'Cantidad'],
+  ];
+  ['XS', 'S', 'M', 'L', 'XL', 'XXL'].forEach(function (t) {
+    filas.push([t, '=COUNTIFS(' + col('Talla de camiseta') + ',"' + t + '",' + pagado + ambas(col('Talla de camiseta') + ',"' + t + '"') + ')']);
+  });
+  filas.push(['Total', '=SUM(B15:B20)']);
+  control.getRange(1, 1, filas.length, 2).setValues(filas);
+  control.getRange('A1').setFontWeight('bold').setFontSize(14);
+  control.getRange('A8:B8').setFontWeight('bold');
+  control.getRange('A14:B14').setFontWeight('bold');
+  control.setColumnWidth(1, 220);
+
+  // Pestaña para combinar correspondencia de gafetes (nombre, ocupación, ciudad)
+  const gafetes = ss.getSheetByName('Gafetes') || ss.insertSheet('Gafetes');
+  gafetes.clear();
+  gafetes.getRange('A1').setFormula(
+    '=QUERY(Inscritos!A:' + letra(COLUMNAS.length) + ',"select B, F, E, H, L where B is not null and (' +
+      letra(COL['Estatus de Pago']) + ' = \'Completado\' or (' + letra(COL['Referencia de pago']) +
+      ' is not null and ' + letra(COL['Referencia de pago']) + ' <> \'' + PAGO_PENDIENTE + '\' and ' +
+      letra(COL['Estatus de Pago']) + ' is null))' +
+      ' label B \'Nombre\', F \'Ocupación\', E \'Ciudad\', H \'Talla\', L \'Tarifa\'",1)'
+  );
 }
 
 /** Pestaña con encabezado: la crea si no existe y escribe la fila de títulos si está vacía. */
@@ -321,6 +340,8 @@ function preinscripcion(body) {
   if (body.tarifa === 'estudiante') {
     solicitud = body.codigo ? buscarSolicitud(String(body.codigo)) : null;
     if (!solicitud || solicitud.estado !== 'Aprobado') return json({ ok: false, error: 'La tarifa de estudiante requiere un carné aprobado.' });
+    // El enlace es de un solo uso: si ya hay un pago acreditado con ese código, no se reutiliza
+    if (solicitud.pagado) return json({ ok: false, error: 'Este enlace de estudiante ya se usó. Si es un error, escríbenos al ' + WHATSAPP_EQUIPO + '.' });
     datos = solicitud.datos;
   }
   const faltan = ['nombre', 'correo', 'whatsapp', 'ciudad', 'ocupacion', 'experiencia', 'talla'].filter(function (k) {
@@ -348,9 +369,10 @@ function preinscripcion(body) {
       }
     }
 
-    // Freno de abuso del endpoint público: máximo N preinscripciones por correo y día
+    // Freno de abuso del endpoint público: máximo N preinscripciones por correo y día.
+    // Sin condición sobre la clave: omitirla no elude el límite.
     const correo = String(datos.correo || '').trim().toLowerCase();
-    if (idem && contarHoyPorCorreo(hoja, correo) >= MAX_PREINSCRIPCIONES_POR_CORREO) {
+    if (contarHoyPorCorreo(hoja, correo) >= MAX_PREINSCRIPCIONES_POR_CORREO) {
       return json({ ok: false, error: 'Ya recibimos varias solicitudes con este correo hoy. Escríbenos al ' + WHATSAPP_EQUIPO + '.' });
     }
 
@@ -565,25 +587,25 @@ function iniciarPago(body) {
     }
 
     // Transferencia
-    if (String(reg.get('Comprobante recibido el'))) {
-      return json({ ok: true, registrationId: regId, metodo: metodo, comprobante: 'recibido' });
-    }
+    const yaRecibido = !!String(reg.get('Comprobante recibido el'));
     if (!activo) {
       pestana(TAB_INTENTOS, COLUMNAS_INTENTOS).appendRow([Utilities.getUuid(), regId, metodo, 'in_progress', new Date(), '', '']);
     }
-    // Token de subida nuevo en cada respuesta: sirve mientras el comprobante siga pendiente.
+    // Token de subida nuevo en cada respuesta: sirve mientras el comprobante siga pendiente,
+    // también para reemplazar un comprobante ya recibido (resubida controlada, tope por registro).
     const token = Utilities.getUuid();
     hoja.getRange(reg.fila, COL['Método de pago']).setValue(metodo);
     hoja.getRange(reg.fila, COL['Monto esperado']).setValue(t.hnl);
     hoja.getRange(reg.fila, COL['Moneda esperada']).setValue('HNL');
     hoja.getRange(reg.fila, COL['Token comprobante (hash)']).setValue(hashToken(token));
-    hoja.getRange(reg.fila, COL['Estado de gestión']).setValue('Esperando comprobante');
+    if (!yaRecibido) hoja.getRange(reg.fila, COL['Estado de gestión']).setValue('Esperando comprobante');
     audit('iniciar-transferencia', regId, 'token emitido');
     SpreadsheetApp.flush();
 
     encolarNotificacion(regId, 'email', 'instrucciones-transferencia-v1', { monto: t.hnl, moneda: 'HNL' });
     procesarNotificaciones();
-    return json({ ok: true, registrationId: regId, metodo: metodo, token: token, banco: banco, monto: t.hnl, moneda: 'HNL', referencia: regId });
+    return json({ ok: true, registrationId: regId, metodo: metodo, token: token, banco: banco,
+      monto: t.hnl, moneda: 'HNL', referencia: regId, comprobante: yaRecibido ? 'recibido' : 'pendiente' });
   } catch (err) {
     console.error(err);
     return json({ ok: false, error: 'No pudimos preparar el pago. Intenta de nuevo en unos minutos.' });
@@ -775,6 +797,7 @@ function uiConfirmarPago() {
     return;
   }
   const nombre = hoja.getRange(fila, COL['Nombre (diploma y gafete)']).getValue();
+  const regIdSel = hoja.getRange(fila, COL['Registration ID']).getValue();
   const estatus = hoja.getRange(fila, COL['Estatus de Pago']).getValue();
   const esperado = hoja.getRange(fila, COL['Monto esperado']).getValue() || hoja.getRange(fila, COL['Monto cobrado']).getValue();
   const moneda = hoja.getRange(fila, COL['Moneda esperada']).getValue() || 'USD';
@@ -798,6 +821,7 @@ function uiConfirmarPago() {
     'if(r.ok)setTimeout(google.script.host.close,1800);}).confirmarPago(' + fila + ',' +
     '{metodo:document.getElementById("m").value,referencia:document.getElementById("r").value,' +
     'monto:document.getElementById("mo").value,moneda:document.getElementById("mo2").value,' +
+    'registrationId:"' + String(regIdSel).replace(/"/g, '') + '",' +
     'confirmo:document.getElementById("c").checked});}</script>'
   ).setWidth(420).setHeight(420);
   ui.showModalDialog(html, 'Confirmar pago verificado');
@@ -819,7 +843,8 @@ function confirmarPago(fila, p) {
     return { ok: false, error: 'Marca la casilla solo después de verificar el abono en la cuenta.' };
   }
   const metodo = p.metodo === METODOS.TRANSFERENCIA ? METODOS.TRANSFERENCIA : p.metodo === METODOS.PAYPAL ? METODOS.PAYPAL : null;
-  const referencia = String(p.referencia || '').trim().slice(0, 80);
+  // Sin prefijo de fórmula: la referencia la escribe una persona en varias celdas
+  const referencia = String(p.referencia || '').trim().replace(/^[=+\-@]+/, '').slice(0, 80);
   const monto = Number(p.monto);
   const moneda = String(p.moneda || '').toUpperCase();
   if (!metodo || !referencia || !(monto > 0) || ['USD', 'HNL'].indexOf(moneda) < 0) {
@@ -832,41 +857,66 @@ function confirmarPago(fila, p) {
   try {
     const hoja = hojaInscritos();
     const ancho = Math.min(COLUMNAS.length, Math.max(hoja.getLastColumn(), 1));
-    const v = hoja.getRange(fila, 1, 1, ancho).getValues()[0];
+    let v = hoja.getRange(fila, 1, 1, ancho).getValues()[0];
     while (v.length < COLUMNAS.length) v.push('');
-    const get = function (c) { return v[COL[c] - 1]; };
+    let get = function (c) { return v[COL[c] - 1]; };
     regId = String(get('Registration ID'));
+    // La fila pudo moverse (ordenar la hoja) mientras el diálogo estaba abierto:
+    // si el regId del diálogo no coincide, se busca el registro por su ID real.
+    if (p.registrationId && String(p.registrationId) !== regId) {
+      const reg = buscarRegistro(hoja, String(p.registrationId));
+      if (!reg) return { ok: false, error: 'La fila seleccionada ya no corresponde al registro. Cierra y vuelve a abrir el menú.' };
+      fila = reg.fila;
+      v = hoja.getRange(fila, 1, 1, ancho).getValues()[0];
+      while (v.length < COLUMNAS.length) v.push('');
+      regId = String(p.registrationId);
+      get = function (c) { return v[COL[c] - 1]; };
+    }
     if (!regId) return { ok: false, error: 'La fila no tiene Registration ID. Corre "Migrar esquema de pagos" primero.' };
     if (String(get('Estatus de Pago')) === ESTATUS_PAGO.COMPLETADO) {
       return { ok: false, error: 'Este registro ya está Completado.' };
     }
 
-    const esperado = Number(get('Monto esperado')) || Number(get('Monto cobrado'));
-    const monEsperada = String(get('Moneda esperada') || get('Moneda') || 'USD');
+    // Lo esperado se deriva de la tarifa según el método declarado: un participante que eligió
+    // transferencia paga en HNL (t.hnl) aunque su preinscripción mostrara USD por defecto.
+    const t = TARIFAS[Object.keys(TARIFAS).filter(function (k) { return TARIFAS[k].nombre === get('Tarifa'); })[0]];
+    const esperado = t ? (metodo === METODOS.TRANSFERENCIA ? t.hnl : t.usd)
+      : (Number(get('Monto esperado')) || Number(get('Monto cobrado')));
+    const monEsperada = metodo === METODOS.TRANSFERENCIA ? 'HNL' : 'USD';
     if (Math.abs(monto - esperado) > 0.01 || moneda !== monEsperada) {
       audit('confirmar-monto-distinto', regId, 'recibido ' + moneda + ' ' + monto + ' vs esperado ' + monEsperada + ' ' + esperado);
-      return { ok: false, error: 'El monto (' + moneda + ' ' + monto + ') no coincide con el esperado (' + monEsperada + ' ' + esperado + '). Revisa antes de confirmar.' };
+      return { ok: false, error: 'El monto (' + moneda + ' ' + monto + ') no coincide con el esperado para ' + metodo + ' (' + monEsperada + ' ' + esperado + '). Revisa antes de confirmar.' };
     }
 
     const settlementKey = metodo + ':' + referencia.toUpperCase().replace(/\s+/g, '');
     const dup = buscarSettlement(settlementKey);
-    if (dup) {
-      if (dup.regId === regId) return { ok: true, repetido: true };
+    if (dup && dup.regId === regId && dup.estado === 'Acreditado') return { ok: true, repetido: true };
+    if (dup && dup.regId !== regId) {
       audit('confirmar-duplicado', regId, 'settlement ' + settlementKey + ' ya usado por ' + dup.regId);
       return { ok: false, error: 'Esta referencia ya se aplicó a otro registro. No se confirmó.' };
     }
+    // dup del mismo registro pero NO acreditado (p. ej. "Sin cupo — por devolver"): se reintenta abajo
 
     // El cupo se verifica bajo el mismo lock en el momento de acreditar (F6):
     // Pendiente nunca reservó lugar; si ya está lleno, queda para gestión de devolución.
     if (contarInscritos().total >= EVENTO.cupo) {
-      hoja.getRange(fila, COL['Estado de gestión']).setValue('Pago recibido — cupo no disponible; gestionar devolución o alternativa');
-      pestana(TAB_ACRED, COLUMNAS_ACRED).appendRow([settlementKey, regId, metodo, referencia, monto, moneda, new Date(), '', operador, 'Sin cupo — por devolver']);
-      audit('confirmar-sin-cupo', regId, settlementKey);
-      SpreadsheetApp.flush();
+      if (!dup) {
+        hoja.getRange(fila, COL['Estado de gestión']).setValue('Pago recibido — cupo no disponible; gestionar devolución o alternativa');
+        pestana(TAB_ACRED, COLUMNAS_ACRED).appendRow([settlementKey, regId, metodo, referencia, monto, moneda, new Date(), '', operador, 'Sin cupo — por devolver']);
+        audit('confirmar-sin-cupo', regId, settlementKey);
+        SpreadsheetApp.flush();
+      }
       return { ok: false, sinCupo: true, error: 'El pago llegó pero el cupo ya está lleno. Quedó registrado para gestionar la devolución.' };
     }
 
-    pestana(TAB_ACRED, COLUMNAS_ACRED).appendRow([settlementKey, regId, metodo, referencia, monto, moneda, new Date(), String(p.evidencia || ''), operador, 'Acreditado']);
+    const hAcred = pestana(TAB_ACRED, COLUMNAS_ACRED);
+    if (dup) { // misma fila, settlement previo sin acreditar: se actualiza esa fila
+      hAcred.getRange(dup.fila, 7).setValue(new Date());
+      hAcred.getRange(dup.fila, 9).setValue(operador);
+      hAcred.getRange(dup.fila, 10).setValue('Acreditado');
+    } else {
+      hAcred.appendRow([settlementKey, regId, metodo, referencia, monto, moneda, new Date(), String(p.evidencia || ''), operador, 'Acreditado']);
+    }
     const set = function (c, val) { hoja.getRange(fila, COL[c]).setValue(val); };
     set('Estatus de Pago', ESTATUS_PAGO.COMPLETADO);
     set('Referencia de pago', referencia);
@@ -923,30 +973,40 @@ function encolarNotificacion(regId, canal, plantilla, datos) {
  * Worker del outbox: envía los 'queued' de email y reintenta los 'failed' (máx. 5 intentos, luego
  * 'delivery_unknown' para revisión humana). Lo llama el trigger horario, el menú y confirmarPago.
  */
+// Único emisor del sistema (outbox). Bajo lock y marcando 'sending' antes del envío:
+// dos ejecuciones concurrentes (cron + confirmación) no disparan la misma bienvenida dos veces.
 function procesarNotificaciones() {
-  const h = pestana(TAB_NOTIF, COLUMNAS_NOTIF);
-  const n = h.getLastRow() - 1;
-  if (n < 1) return;
-  const vs = h.getRange(2, 1, n, COLUMNAS_NOTIF.length).getValues();
-  for (let i = 0; i < vs.length; i++) {
-    const estado = String(vs[i][4]);
-    const intentos = Number(vs[i][5]) || 0;
-    if ((estado !== 'queued' && estado !== 'failed') || String(vs[i][2]) !== 'email' || intentos >= NOTIF_MAX_INTENTOS) continue;
-    const fila = i + 2;
-    const regId = String(vs[i][1]);
-    const plantilla = String(vs[i][3]);
-    let datos = {};
-    try { datos = JSON.parse(String(vs[i][9]) || '{}'); } catch (e) { datos = {}; }
-    try {
-      enviarNotificacion(regId, plantilla, datos);
-      h.getRange(fila, 5).setValue('sent');
-      h.getRange(fila, 8).setValue(new Date());
-    } catch (err) {
-      console.error('Notificación ' + plantilla + ' falló: ' + err);
-      h.getRange(fila, 5).setValue(intentos + 1 >= NOTIF_MAX_INTENTOS ? 'delivery_unknown' : 'failed');
-      h.getRange(fila, 9).setValue(String(err).slice(0, 300));
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(20000)) return; // otra ejecución la está procesando
+  try {
+    const h = pestana(TAB_NOTIF, COLUMNAS_NOTIF);
+    const n = h.getLastRow() - 1;
+    if (n < 1) return;
+    const vs = h.getRange(2, 1, n, COLUMNAS_NOTIF.length).getValues();
+    for (let i = 0; i < vs.length; i++) {
+      const estado = String(vs[i][4]);
+      const intentos = Number(vs[i][5]) || 0;
+      if ((estado !== 'queued' && estado !== 'failed') || String(vs[i][2]) !== 'email' || intentos >= NOTIF_MAX_INTENTOS) continue;
+      const fila = i + 2;
+      const regId = String(vs[i][1]);
+      const plantilla = String(vs[i][3]);
+      let datos = {};
+      try { datos = JSON.parse(String(vs[i][9]) || '{}'); } catch (e) { datos = {}; }
+      h.getRange(fila, 5).setValue('sending'); // reclamo antes de llamar al servicio externo
+      SpreadsheetApp.flush();
+      try {
+        enviarNotificacion(regId, plantilla, datos);
+        h.getRange(fila, 5).setValue('sent');
+        h.getRange(fila, 8).setValue(new Date());
+      } catch (err) {
+        console.error('Notificación ' + plantilla + ' falló: ' + err);
+        h.getRange(fila, 5).setValue(intentos + 1 >= NOTIF_MAX_INTENTOS ? 'delivery_unknown' : 'failed');
+        h.getRange(fila, 9).setValue(String(err).slice(0, 300));
+      }
+      h.getRange(fila, 6).setValue(intentos + 1);
     }
-    h.getRange(fila, 6).setValue(intentos + 1);
+  } finally {
+    lock.releaseLock();
   }
 }
 
@@ -1025,17 +1085,30 @@ function migrar() {
     if (String(r[COL['Correo enviado'] - 1]) === 'Sí') {
       set('Estatus de Pago', ESTATUS_PAGO.COMPLETADO);
       set('Estado de gestión', 'Migrado — bienvenida ya enviada');
-      if (!r[COL['Método de pago'] - 1] && /paypal/i.test(String(r[COL['Pasarela'] - 1]))) set('Método de pago', METODOS.PAYPAL);
-      // Sembrar el historial para que la cola nunca reenvíe estas bienvenidas
-      encolarNotificacion(regId, 'email', 'bienvenida-v1', {});
-      const h = pestana(TAB_NOTIF, COLUMNAS_NOTIF);
-      h.getRange(h.getLastRow(), 5).setValue('sent');
-      h.getRange(h.getLastRow(), 8).setValue(new Date());
+      const metodo = r[COL['Método de pago'] - 1] || (/paypal/i.test(String(r[COL['Pasarela'] - 1])) ? METODOS.PAYPAL : '');
+      if (metodo) {
+        set('Método de pago', metodo);
+        // Siembra el ledger para que esa referencia vieja no pueda reutilizarse en otra fila
+        const key = metodo + ':' + ref.toUpperCase().replace(/\s+/g, '');
+        if (!buscarSettlement(key)) {
+          pestana(TAB_ACRED, COLUMNAS_ACRED).appendRow([key, regId, metodo, ref,
+            r[COL['Monto cobrado'] - 1] || '', String(r[COL['Moneda'] - 1] || 'USD'),
+            r[COL['Fecha de pago'] - 1] || '', 'fila legada', 'migración', 'Acreditado (legado)']);
+        }
+      }
+      // Sembrar el historial para que la cola nunca reenvíe estas bienvenidas:
+      // solo si la encoló de verdad (si el evento ya existía no hay fila nueva que marcar)
+      if (encolarNotificacion(regId, 'email', 'bienvenida-v1', {})) {
+        const h = pestana(TAB_NOTIF, COLUMNAS_NOTIF);
+        h.getRange(h.getLastRow(), 5).setValue('sent');
+        h.getRange(h.getLastRow(), 8).setValue(new Date());
+      }
     } else {
       set('Estatus de Pago', ESTATUS_PAGO.PENDIENTE);
       set('Estado de gestión', 'Referencia legada sin bienvenida — revisar en PayPal');
     }
   });
+  rehacerVistas(SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('HOJA_ID')));
   SpreadsheetApp.flush();
 }
 
