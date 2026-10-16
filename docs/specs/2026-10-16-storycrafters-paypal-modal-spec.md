@@ -1,4 +1,4 @@
-# STORYCRAFTERS — Spec v2: inscripción, cobro PayPal, recuperación bancaria y comunicaciones
+# STORYCRAFTERS — Spec v3: inscripción, cobro PayPal, recuperación bancaria y comunicaciones
 
 **Issue:** [ahvega/sc-mb#20](https://github.com/ahvega/sc-mb/issues/20)  
 **Fecha:** 2026-10-16  
@@ -7,7 +7,7 @@
 
 ## 1. Objetivo y fuente de verdad
 
-Registrar a cada participante **antes de iniciar el cobro**, con una fila trazable en Google Sheets; abrir un modal para efectuar el pago PayPal por la tarifa que corresponde; acreditar el éxito solo tras verificación; y manejar pagos no completados con seguimiento por WhatsApp/correo y una alternativa de transferencia bancaria. Al acreditar **cualquier** modalidad, enviar bienvenida una sola vez por correo y WhatsApp, con direcciones al evento.
+Registrar a cada participante **antes de iniciar el cobro**, con una fila trazable en Google Sheets; abrir el modal existente con dos opciones de pago — **Tarjeta de crédito o débito (PayPal)** y **Transferencia bancaria** — para la tarifa que corresponde; acreditar el éxito solo tras verificación; y manejar pagos no completados con seguimiento por WhatsApp/correo y una alternativa de transferencia bancaria. Al acreditar **cualquier** modalidad, enviar bienvenida una sola vez por correo y WhatsApp, con direcciones al evento.
 
 **Terminología explícita:** `Estatus de Pago` = `Pendiente` | `Completado` (valores solicitados). Un campo distinto, **`Estado de gestión`**, distingue `Pago PayPal en curso`, `Fallo confirmado`, `Cancelado`, `Verificación pendiente`, `Transferencia solicitada`, `Comprobante recibido`, `Verificación bancaria pendiente` y `Resuelto`. La columna de pago jamás se marca `Completado` por un callback del navegador, captura no verificada o comprobante sin conciliar. No se usa `Fallido` como estatus de pago: queda `Pendiente`, con motivo en `Estado de gestión`.
 
@@ -17,8 +17,8 @@ Registrar a cada participante **antes de iniciar el cobro**, con una fila trazab
 - `site/js/inscripcion.js` contiene un flujo anterior de PayPal SDK / orden/captura y Google Apps Script.
 - `backend/backend-inscripciones.gs` maneja inscripciones, cupos, revisión de carné y hojas. `backend/LEEME.md` explica su instalación manual.
 - `docs/PLAN-INSCRIPCION.md` es un plan anterior (Google Forms + enlaces, grupos) **no vinculante** si contradice el flujo actual.
-- **Trabajo externo en curso:** otro agente está generando un **documento Markdown con snippets/links PayPal por tarifa** y posiblemente implementando botones y modal. **La ruta exacta del MD, PR y estado de integración se deben descubrir en GitHub al tomar cada unidad; no asumir nombres de archivo ni volver a generar snippets.**
-- **PR abierta observada el 16-oct-2026: [#24 — Guardar los datos del formulario en la hoja antes del pago](https://github.com/ahvega/sc-mb/pull/24).** Su descripción propone una acción `preinscripcion`, filas con `Referencia de pago=PENDIENTE` y excluir pendientes de cupos. También indica que la ventana de pago se abre **aunque falle guardar la preinscripción**; esto **no satisface** el requisito de vinculación inmutable: debe cambiarse a fallo cerrado antes del cobro, o acordarse y verificar una alternativa duradera equivalente. **No editar los mismos archivos en paralelo ni duplicar la PR #24.** La PR no se considera fusionada hasta verificarlo.
+- **Trabajo del otro agente ya fusionado:** `docs/paypal-botones.md` documenta Hosted Buttons USD 64/72/82 y PR #23 incorporó la modal PayPal; no recrear.
+- **PR #24 fusionada a `main` el 16-oct-2026: [#24 — Guardar los datos del formulario en la hoja antes del pago](https://github.com/ahvega/sc-mb/pull/24).** Su descripción propone una acción `preinscripcion`, filas con `Referencia de pago=PENDIENTE` y excluir pendientes de cupos. También indica que la ventana de pago se abre **aunque falle guardar la preinscripción**; esto **no satisface** el requisito de vinculación inmutable: debe cambiarse a fallo cerrado antes del cobro, o acordarse y verificar una alternativa duradera equivalente. **No editar los mismos archivos en paralelo ni duplicar la PR #24.** La fusión fue verificada mediante el historial de `main`.
 
 ### Contrato de coordinación
 
@@ -35,8 +35,12 @@ flowchart TD
   A[Participante envía formulario] --> B[Backend valida y guarda preinscripción]
   B -->|error persistencia| X[No abrir cobro; reintentar o contactar soporte]
   B -->|registro ID creado| C[Sheets: Estatus de Pago = Pendiente]
-  C --> D[Modal: tarifa y botón PayPal de la configuración vigente]
-  D --> E{PayPal / validación backend}
+  C --> D[Modal: elegir Tarjeta PayPal o Transferencia]
+  D -->|Tarjeta| DP[Botón PayPal por tarifa]
+  DP --> E{PayPal / validación backend}
+  D -->|Transferencia| TB[Mostrar cuenta bancaria y formulario de comprobante]
+  TB --> TC[Guardar archivo con acceso restringido y enviar aviso a operaciones]
+  TC --> M
   E -->|captura verificada| F[Sheets: Completado; referencia y método PayPal]
   E -->|cancelado o fallo confirmado| G[Sheets: Pendiente; motivo de fallo]
   E -->|resultado desconocido| H[Pendiente; conciliación, sin duplicar cobro]
@@ -51,6 +55,23 @@ flowchart TD
   N --> O
   O --> P[WhatsApp + email de confirmación y cómo llegar]
 ```
+
+## 3.0 Decisión de producto actualizada — selector de pago al enviar datos (16-oct-2026)
+
+**Este apartado prevalece ante cualquier descripción anterior que limite la transferencia a un fallback después de fallar PayPal.** La transferencia es un método primario disponible desde el primer momento, sin intentar PayPal. El documento permanece **Status: awaiting approval**; esta revisión no es aprobación ni implementación.
+
+1. Tras pulsar **Enviar inscripción**, validar y **persistir** datos en Google Sheets (`registrationId` único, `Estatus de Pago=Pendiente`, tarifa y monto validados). Si no se confirma la persistencia, **no** abrir un proceso de cobro ni permitir subida de comprobante; mostrar error recuperable.
+2. Mostrar la **modal actual** (`<dialog>`), adaptada con dos opciones mutuamente excluyentes y reversibles: **(A) Tarjeta de crédito o débito (pagar con PayPal)** y **(B) Transferencia bancaria**. Mostrar tarifa, monto exigible, moneda, titular y advertencia de que el cupo se confirma tras verificar fondos; conservar cierre y accesibilidad por teclado/foco. No crear otra modal.
+3. Si elige **A**, presentar dentro de la modal el `HostedButtons` que ya corresponde a la tarifa según [`docs/paypal-botones.md`](../../paypal-botones.md); no recrear botones ni tratar la apertura del link/retorno como pago completado.
+4. Si elige **B**, mostrar **datos bancarios oficiales de Media Builders** previamente aprobados por el dueño (banco, beneficiario, número y tipo de cuenta, moneda, instrucciones y referencia del registro), más botón **Subir foto de comprobante** (JPG/PNG/WebP; PDF opcional si se admite y valida). El dato bancario es **gate operativo obligatorio** antes de activar la opción: sin él, mostrar «Transferencias temporalmente no disponibles» y avisar al administrador, sin inventar cuentas. El monto a transferir y su moneda pueden diferir del PayPal en USD: servir valor validado para banco, no aplicar conversiones imaginarias.
+5. El archivo se sube desde la modal por **HTTPS al backend autorizado**, se valida por contenido real/MIME, tamaño, extensión y pertenencia al `registrationId`; se almacena en Drive con acceso privado, sin URL pública ni guardar imagen base64 en Sheets. Crear un identificador de comprobante idempotente; guardar enlace restringido, fecha, monto esperado, método `Transferencia` y `Estado de gestión=Comprobante recibido / Verificación bancaria pendiente`. **Estatus de Pago sigue Pendiente.** Confirmación al participante: «Recibimos tu comprobante. Tu pago será confirmado después de verificar el abono; no necesitas volver a pagar».
+6. **Correo interno obligatorio:** enviar a `storycrafters@themediabuilders.com` con comprobante **adjunto** (no solo enlace), identificador, nombre, correo, WhatsApp/teléfono, tarifa, importe/moneda, fecha e instrucciones de revisión; limitar formato/tamaño según cuotas de MailApp. Registrar éxito/error de envío y reintentos sin adjuntos duplicados innecesarios.
+7. **WhatsApp del evento:** remitir **la imagen como medio/documento adjunto y un texto identificador** con contacto y tarifa, usando integración automática autorizada de WhatsApp Business Platform/BSP **si realmente está configurada y permite enviar media al destinatario**. Un `wa.me` o texto prellenado no envía imágenes automáticamente. Como alternativa sin API: proveer al operador un enlace manual a WhatsApp y el archivo privado para descargar/adjuntar; indicarlo expresamente como **envío manual pendiente**, no como envío completado. No incluir URLs públicas de documentos ni tokens en el mensaje.
+8. **Verificar pago de transferencia:** la autenticidad visual de una foto **no prueba acreditación bancaria**. OCR/clasificador de imágenes puede detectar incongruencias y proponer revisión, **nunca marcar automáticamente Completado solo por reconocer una imagen**. Automatizar `Pendiente → Completado` únicamente si existe fuente bancaria autorizada que confirme abono, monto, moneda y referencia inequívocos; en otro caso el correo/WhatsApp al administrador debe decir **«Verifica el abono en el banco y cambia Estatus de Pago a Completado mediante la acción autorizada»**. Registrar quién verificó, referencia y fecha; ejecutar bienvenida idempotente por ambos canales al confirmar.
+9. Si llega un segundo comprobante o se pulsa varias veces el botón, deduplicar por `registrationId`/archivo y evitar mensajes repetidos. Manejar carga fallida, correo caído, WhatsApp no configurado, archivo fraudulento/no coincidente, cuenta bancaria ausente, transferencia duplicada y potencial cargo PayPal simultáneo sin declarar cobro inexistente.
+10. **Coordinar con las PRs #23 y #24 ya fusionadas:** modificar lo mínimo sobre la modal y preinscripción en `main`; documentar cambios de Apps Script, permisos Drive, plantillas/email, proveedor WhatsApp y configuración bancaria. No desplegar backend automáticamente ni publicar secretos, fotos, teléfonos o cuentas no autorizadas en GitHub.
+
+**Criterios adicionales verificables**: [ ] tras submit y guardado aparece selector A/B; [ ] A presenta el Hosted Button vigente; [ ] B muestra cuenta real y opción de adjuntar; [ ] imagen almacenada privadamente y asociada a inscripción; [ ] email interno tiene adjunto y contacto; [ ] WhatsApp recibe imagen+datos solo si API real configurada, con degradación manual honesta; [ ] Sheets conserva `Pendiente` hasta confirmación bancaria independiente; [ ] aprobación manual/automática sustentada en abono transiciona exactamente una vez a `Completado`; [ ] bienvenida por email/WhatsApp sin duplicación; [ ] pruebas móviles, seguridad de uploads, idempotencia, reintentos y errores.
 
 ### 3.1 Persistencia antes de PayPal
 
@@ -163,13 +184,13 @@ Si el canal soporta plantilla aprobada con dos botones URL, usar **Google Maps**
 | Cupos finales general | L 2,200 | Igual |
 | Estudiante aprobado | L 1,700 | Igual, con token/permiso verificado |
 
-La configuración actual del backend convierte HNL a USD con tasa histórica de referencia **24.70**; no se interpreta como equivalencia comercial aprobada. Validar beneficiario, capture ID único, monto/moneda, cupo, vigencia y aprobación estudiante en backend. No introducir posibilidad de alterar precios vía HTML, links o API. No marcar completado en retornos visuales. No registrar duplicados por retries, triggers o doble pulsación.
+La implementación actual en main utiliza botones de precio fijo USD 64/72/82 documentados en `docs/paypal-botones.md`; el backend conserva rutas anteriores y hay que reconciliarlas. Una versión histórica utilizó la tasa **24.70**; no se interpreta como equivalencia comercial aprobada. Validar beneficiario, capture ID único, monto/moneda, cupo, vigencia y aprobación estudiante en backend. No introducir posibilidad de alterar precios vía HTML, links o API. No marcar completado en retornos visuales. No registrar duplicados por retries, triggers o doble pulsación.
 
 **Pruebas obligatorias antes de Live:** guardado previo correcto; persistencia fallida (el pago NO se abre); success/cancel/fail/unknown PayPal; dos callbacks; dos ediciones de hoja; error de envío por un canal; falta de plantilla/token WhatsApp; datos bancarios incompletos; comprobante sin abono; reconciliación de cargo que ocurrió tras error de red; cupos agotados; carné estudiante no aprobado; accesibilidad modal; prueba con sandbox sin correos falsamente presentados como entregados. Revisar simultaneidad con `LockService` o equivalente.
 
 ## 7. Límites y decisiones de aprobación (Gate 1)
 
-1. **Confirmar** que el proyecto debe incluir **transferencias como recuperación**, aun cuando el flujo anterior excluía transferencias. Esta especificación asume **sí**, conforme a la solicitud actual.
+1. **Confirmado en la solicitud actual:** transferencia y tarjeta/PayPal son dos opciones directas del modal tras el submit; no limitar transferencias a un fallo de PayPal.
 2. **Configurar** qué número WhatsApp usa Media Builders como emisor y cuál recibe alertas; y qué proveedor/API permite el envío automático. Hasta disponer de él, la funcionalidad debe degradar a correo + enlace manual, indicando en el panel que WhatsApp no salió.
 3. **Proporcionar** datos bancarios, moneda y canal para comprobante, además de las reglas de verificación bancaria (responsable de conciliar). No se incluirán cuentas inventadas.
 4. **Resolver con el agente PayPal** el MD de botones, la PR activa, modalidad de verificación de compra y la titularidad de la modal. Revisar #24 antes de fusionar otras piezas; si ya está fusionada, volver a auditar su comportamiento.
@@ -194,4 +215,4 @@ La configuración actual del backend convierte HNL a USD con tasa histórica de 
 - **Clase propuesta:** A+B (diseño parcialmente abierto con dinero, datos personales y múltiples proveedores externos).
 - **Builder:** GPT-6 (OpenAI). **Reviewer independiente:** no ejecutado/verificado; revisión adversarial en contexto limpio pendiente antes de declarar el artefacto completamente revisado.
 - **Gate 1:** `Status: awaiting approval`; no existe plan generado por esta spec.
-- **Reglas de repo:** `CLAUDE.md` (sitio solo `site/`, backend Apps Script manual, copy en español, no editar `deploy`, ramas/PR); `agent-skills/skills/create-spec-plan` (Gate 1). Documento no comprometido en repositorio; ninguna edición de código realizada.
+- **Reglas de repo:** `CLAUDE.md` (sitio solo `site/`, backend Apps Script manual, copy en español, no editar `deploy`, ramas/PR); `agent-skills/skills/create-spec-plan` (Gate 1). Documento versionado en PR #27 (rama `docs/20-paypal-checkout-spec--issue-20`); ninguna edición de código realizada en esta revisión.
