@@ -19,19 +19,14 @@ const EVENTO = {
   zona: 'America/Tegucigalpa',
 };
 
-// Los precios oficiales son en Lempiras. Solo si la pasarela es PayPal (no acepta Lempiras) se cobra
-// el equivalente en dólares según TASA_CAMBIO (L por 1 USD), redondeado a dólares enteros.
-// Con 24.70: L 1,700 = USD 69 · L 1,900 = USD 77 · L 2,200 = USD 89.
-const TASA_CAMBIO = 24.70;
+// Los precios oficiales son en dólares (PayPal cobra en USD). hnl queda solo como referencia
+// interna para la hoja (columna "Precio (L)"), con la venta BCH del 15 oct 2026 (~27.03).
 const TARIFAS = {
-  preventa:   { nombre: 'Preventa',      hnl: 1700, desde: '2026-01-01', hasta: '2026-11-05' },
-  regular:    { nombre: 'Regular',       hnl: 1900, desde: '2026-11-06', hasta: '2026-11-25' },
-  finales:    { nombre: 'Cupos finales', hnl: 2200, desde: '2026-11-26', hasta: '2026-12-11' },
-  estudiante: { nombre: 'Estudiante',    hnl: 1700, desde: '2026-01-01', hasta: '2026-12-11', carne: true },
+  preventa:   { nombre: 'Preventa',      usd: 64, hnl: 1700, desde: '2026-01-01', hasta: '2026-11-05' },
+  regular:    { nombre: 'Regular',       usd: 72, hnl: 1900, desde: '2026-11-06', hasta: '2026-11-25' },
+  finales:    { nombre: 'Cupos finales', usd: 82, hnl: 2200, desde: '2026-11-26', hasta: '2026-12-11' },
+  estudiante: { nombre: 'Estudiante',    usd: 64, hnl: 1700, desde: '2026-01-01', hasta: '2026-12-11', carne: true },
 };
-Object.keys(TARIFAS).forEach(function (k) {
-  TARIFAS[k].usd = Math.round(TARIFAS[k].hnl / TASA_CAMBIO);
-});
 
 const WHATSAPP_EQUIPO = '+504 [NÚMERO]';
 
@@ -403,8 +398,8 @@ function solicitudEstudiante(body) {
     try {
       enviarCorreoSimple(datos.correo, 'Recibimos tu carné, ' + saludo, 'Recibimos tu <span>carné</span>',
         ['Hola, ' + saludo + '. Recibimos tu solicitud de tarifa de estudiante para STORYCRAFTERS.',
-         'Vamos a revisar tu carné y te escribiremos a este correo. Si lo aprobamos, te llegará un enlace personal para pagar L ' +
-         t.hnl.toLocaleString('en-US') + ' y confirmar tu lugar.',
+         'Vamos a revisar tu carné y te escribiremos a este correo. Si lo aprobamos, te llegará un enlace personal para pagar USD ' +
+         t.usd + ' y confirmar tu lugar.',
          'Tu lugar todavía no está reservado: se confirma cuando pagas.']);
       MailApp.sendEmail(CORREO_EVENTO, 'Nueva solicitud de estudiante: ' + limpio(datos.nombre),
         'Revisa el carné y cambia el Estado en la pestaña Estudiantes.\n' +
@@ -534,8 +529,8 @@ function procesarEstado(hoja, fila) {
     const enlace = LANDING_URL + '?estudiante=' + codigo + '#inscripcion';
     enviarCorreoSimple(correo, '¡Tu carné fue aprobado, ' + saludo + '! Completa tu inscripción',
       'Tu carné fue <span>aprobado</span>',
-      ['¡Listo, ' + saludo + '! Revisamos tu carné y ya puedes inscribirte con la tarifa de estudiante: L ' +
-        t.hnl.toLocaleString('en-US') + '.',
+      ['¡Listo, ' + saludo + '! Revisamos tu carné y ya puedes inscribirte con la tarifa de estudiante: USD ' +
+        t.usd + '.',
        'Este enlace es personal y sirve para un solo pago. Tu lugar queda confirmado en cuanto pagas.'],
       { texto: 'Pagar mi inscripción', url: enlace });
   } else if (estado === 'Rechazado') {
@@ -623,7 +618,7 @@ const PASARELAS = {
 /** Pago ficticio para pruebas. Solo funciona con MODO_PRUEBA = true. */
 function cobrarPrueba(referencia, t) {
   if (!MODO_PRUEBA) return { ok: false, error: 'Pasarela de pago no configurada. No se realizó ningún cobro.' };
-  return { ok: true, monto: t.hnl, moneda: 'HNL', comprobante: 'PRUEBA (sin cobro real)' };
+  return { ok: true, monto: t.usd, moneda: 'USD', comprobante: 'PRUEBA (sin cobro real)' };
 }
 
 /** PixelPay: pendiente de conectar cuando esté la cuenta y su documentación. */
@@ -773,8 +768,8 @@ function enviarConfirmacion(r) {
     '</td></tr>' +
     '<tr><td style="padding:8px 0 32px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid ' + C.linea + ';">' +
     dato('Fecha', EVENTO.fecha) + dato('Lugar', EVENTO.lugar) + dato('Tarifa', t.nombre) +
-    dato('Pagado', 'L ' + t.hnl.toLocaleString('en-US') +
-      (r.moneda === 'USD' ? ' (USD ' + Number(r.monto) + ' vía PayPal)' : '')) + dato('Recibo', r.captura) +
+    dato('Pagado', 'USD ' + (r.moneda === 'USD' ? Number(r.monto) : t.usd) +
+      (r.moneda === 'USD' ? ' vía PayPal' : '')) + dato('Recibo', r.captura) +
     '</table></td></tr>' +
     extra +
     '<tr><td style="padding:0 0 32px;">' + etiqueta('Qué sigue') +
@@ -805,8 +800,8 @@ function probarCorreo() {
     nombre: 'María López',
     correo: Session.getActiveUser().getEmail(),
     tarifa: TARIFAS.preventa,
-    monto: TARIFAS.preventa.hnl,
-    moneda: 'HNL',
+    monto: TARIFAS.preventa.usd,
+    moneda: 'USD',
     captura: 'PRUEBA-123',
   });
 }
