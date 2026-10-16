@@ -2,7 +2,7 @@
 
 **Issue:** [ahvega/sc-mb#20](https://github.com/ahvega/sc-mb/issues/20)  
 **Fecha:** 2026-10-16  
-**Status: awaiting approval** (Gate 1 de `create-spec-plan`)  
+**Status: approved by owner 2026-10-16** (Gate 1; aprobación explícita en conversación, verificación humana de comprobantes obligatoria)  
 **Naturaleza:** especificación propuesta, no es plan ni autorización para desplegar pagos en producción.
 
 ## 1. Objetivo y fuente de verdad
@@ -58,7 +58,7 @@ flowchart TD
 
 ## 3.0 Decisión de producto actualizada — selector de pago al enviar datos (16-oct-2026)
 
-**Este apartado prevalece ante cualquier descripción anterior que limite la transferencia a un fallback después de fallar PayPal.** La transferencia es un método primario disponible desde el primer momento, sin intentar PayPal. El documento permanece **Status: awaiting approval**; esta revisión no es aprobación ni implementación.
+**Este apartado prevalece ante cualquier descripción anterior que limite la transferencia a un fallback después de fallar PayPal.** La transferencia es un método primario disponible desde el primer momento, sin intentar PayPal. Esta especificación está **aprobada para planificar**, pero no habilita cobros reales ni sustituye los gates operativos de configuración.
 
 1. Tras pulsar **Enviar inscripción**, validar y **persistir** datos en Google Sheets (`registrationId` único, `Estatus de Pago=Pendiente`, tarifa y monto validados). Si no se confirma la persistencia, **no** abrir un proceso de cobro ni permitir subida de comprobante; mostrar error recuperable.
 2. Mostrar la **modal actual** (`<dialog>`), adaptada con dos opciones mutuamente excluyentes y reversibles: **(A) Tarjeta de crédito o débito (pagar con PayPal)** y **(B) Transferencia bancaria**. Mostrar tarifa, monto exigible, moneda, titular y advertencia de que el cupo se confirma tras verificar fondos; conservar cierre y accesibilidad por teclado/foco. No crear otra modal.
@@ -67,7 +67,7 @@ flowchart TD
 5. El archivo se sube desde la modal por **HTTPS al backend autorizado**, se valida por contenido real/MIME, tamaño, extensión y pertenencia al `registrationId`; se almacena en Drive con acceso privado, sin URL pública ni guardar imagen base64 en Sheets. Crear un identificador de comprobante idempotente; guardar enlace restringido, fecha, monto esperado, método `Transferencia` y `Estado de gestión=Comprobante recibido / Verificación bancaria pendiente`. **Estatus de Pago sigue Pendiente.** Confirmación al participante: «Recibimos tu comprobante. Tu pago será confirmado después de verificar el abono; no necesitas volver a pagar».
 6. **Correo interno obligatorio:** enviar a `storycrafters@themediabuilders.com` con comprobante **adjunto** (no solo enlace), identificador, nombre, correo, WhatsApp/teléfono, tarifa, importe/moneda, fecha e instrucciones de revisión; limitar formato/tamaño según cuotas de MailApp. Registrar éxito/error de envío y reintentos sin adjuntos duplicados innecesarios.
 7. **WhatsApp del evento:** remitir **la imagen como medio/documento adjunto y un texto identificador** con contacto y tarifa, usando integración automática autorizada de WhatsApp Business Platform/BSP **si realmente está configurada y permite enviar media al destinatario**. Un `wa.me` o texto prellenado no envía imágenes automáticamente. Como alternativa sin API: proveer al operador un enlace manual a WhatsApp y el archivo privado para descargar/adjuntar; indicarlo expresamente como **envío manual pendiente**, no como envío completado. No incluir URLs públicas de documentos ni tokens en el mensaje.
-8. **Verificar pago de transferencia:** la autenticidad visual de una foto **no prueba acreditación bancaria**. OCR/clasificador de imágenes puede detectar incongruencias y proponer revisión, **nunca marcar automáticamente Completado solo por reconocer una imagen**. Automatizar `Pendiente → Completado` únicamente si existe fuente bancaria autorizada que confirme abono, monto, moneda y referencia inequívocos; en otro caso el correo/WhatsApp al administrador debe decir **«Verifica el abono en el banco y cambia Estatus de Pago a Completado mediante la acción autorizada»**. Registrar quién verificó, referencia y fecha; ejecutar bienvenida idempotente por ambos canales al confirmar.
+8. **Verificar pago de transferencia:** la autenticidad visual de una foto **no prueba acreditación bancaria**. OCR/clasificador de imágenes puede detectar incongruencias y proponer revisión, **nunca marcar automáticamente Completado solo por reconocer una imagen**. **Por decisión expresa del propietario, NO automatizar la verificación ni la transición bancaria, incluso si hubiera API bancaria disponible.** La verificación del abono y la acción de aprobación son **siempre manuales y humanas**; en otro caso el correo/WhatsApp al administrador debe decir **«Verifica el abono en el banco y cambia Estatus de Pago a Completado mediante la acción autorizada»**. Registrar quién verificó, referencia y fecha; ejecutar bienvenida idempotente por ambos canales al confirmar.
 9. Si llega un segundo comprobante o se pulsa varias veces el botón, deduplicar por `registrationId`/archivo y evitar mensajes repetidos. Manejar carga fallida, correo caído, WhatsApp no configurado, archivo fraudulento/no coincidente, cuenta bancaria ausente, transferencia duplicada y potencial cargo PayPal simultáneo sin declarar cobro inexistente.
 10. **Coordinar con las PRs #23 y #24 ya fusionadas:** modificar lo mínimo sobre la modal y preinscripción en `main`; documentar cambios de Apps Script, permisos Drive, plantillas/email, proveedor WhatsApp y configuración bancaria. No desplegar backend automáticamente ni publicar secretos, fotos, teléfonos o cuentas no autorizadas en GitHub.
 
@@ -196,7 +196,7 @@ La implementación actual en main utiliza botones de precio fijo USD 64/72/82 do
 4. **Resolver con el agente PayPal** el MD de botones, la PR activa, modalidad de verificación de compra y la titularidad de la modal. Revisar #24 antes de fusionar otras piezas; si ya está fusionada, volver a auditar su comportamiento.
 5. **Confirmar** si las tarifas grupales existen en la UX final. Este documento no las introduce automáticamente.
 
-**Criterios para aprobar spec**: los cinco puntos anteriores pueden permanecer como **gates operativos para activar Live**, pero la arquitectura de estados, guardado previo, no duplicación, comportamiento de falla y verificación de transferencias son requisitos vinculantes del desarrollo. Si se desea que el sistema opere sin integración WhatsApp automatizada, aprobar explícitamente la degradación temporal como entrega parcial y documentarla.
+**Criterios para aprobar spec**: los cinco puntos anteriores pueden permanecer como **gates operativos para activar Live**, pero la arquitectura de estados, guardado previo, no duplicación, comportamiento de falla y verificación de transferencias son requisitos vinculantes del desarrollo. WhatsApp automático continúa como dependencia operativa de producción, con degradación temporal claramente documentada cuando falte proveedor. **La verificación bancaria manual ya está aprobada como decisión de producto y no es configurable hacia modo automático.**
 
 ## 8. Descomposición propuesta para el plan (aún NO aprobado)
 
@@ -214,5 +214,5 @@ La implementación actual en main utiliza botones de precio fijo USD 64/72/82 do
 - **Jev:** `judgment — no classifier` (no se verificó Jev ejecutable en esta sesión).
 - **Clase propuesta:** A+B (diseño parcialmente abierto con dinero, datos personales y múltiples proveedores externos).
 - **Builder:** GPT-6 (OpenAI). **Reviewer independiente:** no ejecutado/verificado; revisión adversarial en contexto limpio pendiente antes de declarar el artefacto completamente revisado.
-- **Gate 1:** `Status: awaiting approval`; no existe plan generado por esta spec.
+- **Gate 1:** `Status: approved by owner 2026-10-16`; autorizado elaborar plan; aprobación explícita requiere revisión humana y manual de transferencias.
 - **Reglas de repo:** `CLAUDE.md` (sitio solo `site/`, backend Apps Script manual, copy en español, no editar `deploy`, ramas/PR); `agent-skills/skills/create-spec-plan` (Gate 1). Documento versionado en PR #27 (rama `docs/20-paypal-checkout-spec--issue-20`); ninguna edición de código realizada en esta revisión.
