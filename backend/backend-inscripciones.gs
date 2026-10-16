@@ -88,27 +88,29 @@ function instalar() {
   });
 
   const col = function (c) { return 'Inscritos!' + letra(COL[c]) + '2:' + letra(COL[c]); };
+  // Las filas con pago PENDIENTE (botón de PayPal sin verificar) no cuentan como inscritos
+  const pagado = col('Referencia de pago') + ',"<>' + PAGO_PENDIENTE + '"';
 
   const control = ss.getSheetByName('Control') || ss.insertSheet('Control');
   control.clear();
   const filas = [
     ['STORYCRAFTERS · Control', ''],
     ['Cupo total', EVENTO.cupo],
-    ['Inscritos pagados', '=COUNTA(' + col('Referencia de pago') + ')'],
+    ['Inscritos pagados', '=COUNTA(' + col('Referencia de pago') + ')-COUNTIF(' + col('Referencia de pago') + ',"' + PAGO_PENDIENTE + '")'],
     ['Cupos disponibles', '=B2-B3'],
-    ['Ingresos (L)', '=SUM(' + col('Precio (L)') + ')'],
-    ['Cobrado en USD (solo PayPal)', '=SUMIF(' + col('Moneda') + ',"USD",' + col('Monto cobrado') + ')'],
-    ['', ''],
+    ['Ingresos (L)', '=SUMIFS(' + col('Precio (L)') + ',' + pagado + ')'],
+    ['Cobrado en USD (solo PayPal)', '=SUMIFS(' + col('Monto cobrado') + ',' + col('Moneda') + ',"USD",' + pagado + ')'],
+    ['Pagos por verificar en PayPal', '=COUNTIF(' + col('Referencia de pago') + ',"' + PAGO_PENDIENTE + '")'],
     ['Por tarifa', ''],
-    ['Preventa', '=COUNTIF(' + col('Tarifa') + ',"Preventa")'],
-    ['Regular', '=COUNTIF(' + col('Tarifa') + ',"Regular")'],
-    ['Cupos finales', '=COUNTIF(' + col('Tarifa') + ',"Cupos finales")'],
-    ['Estudiante', '=COUNTIF(' + col('Tarifa') + ',"Estudiante")'],
+    ['Preventa', '=COUNTIFS(' + col('Tarifa') + ',"Preventa",' + pagado + ')'],
+    ['Regular', '=COUNTIFS(' + col('Tarifa') + ',"Regular",' + pagado + ')'],
+    ['Cupos finales', '=COUNTIFS(' + col('Tarifa') + ',"Cupos finales",' + pagado + ')'],
+    ['Estudiante', '=COUNTIFS(' + col('Tarifa') + ',"Estudiante",' + pagado + ')'],
     ['', ''],
     ['Pedido de camisetas', 'Cantidad'],
   ];
   ['XS', 'S', 'M', 'L', 'XL', 'XXL'].forEach(function (t) {
-    filas.push([t, '=COUNTIF(' + col('Talla de camiseta') + ',"' + t + '")']);
+    filas.push([t, '=COUNTIFS(' + col('Talla de camiseta') + ',"' + t + '",' + pagado + ')']);
   });
   filas.push(['Total', '=SUM(B15:B20)']);
   control.getRange(1, 1, filas.length, 2).setValues(filas);
@@ -121,7 +123,7 @@ function instalar() {
   const gafetes = ss.getSheetByName('Gafetes') || ss.insertSheet('Gafetes');
   gafetes.clear();
   gafetes.getRange('A1').setFormula(
-    '=QUERY(Inscritos!A:L,"select B, F, E, H, L where B is not null label B \'Nombre\', F \'Ocupación\', ' +
+    '=QUERY(Inscritos!A:Q,"select B, F, E, H, L where B is not null and Q <> \'' + PAGO_PENDIENTE + '\' label B \'Nombre\', F \'Ocupación\', ' +
       'E \'Ciudad\', H \'Talla\', L \'Tarifa\'",1)'
   );
 
@@ -205,6 +207,7 @@ function doPost(e) {
   }
 
   if (body.accion === 'solicitudEstudiante') return solicitudEstudiante(body);
+  if (body.accion === 'preinscripcion') return preinscripcion(body);
 
   let datos = body.datos || {};
   const pago = body.pago || (body.orderID ? { pasarela: 'paypal', referencia: body.orderID } : {});
@@ -305,6 +308,84 @@ function doPost(e) {
   }
 
   return json({ ok: true, nombre: limpio(datos.nombre).split(' ')[0] });
+}
+
+// ---------- Preinscripción (pago con botón guardado de PayPal) ----------
+
+const PAGO_PENDIENTE = 'PENDIENTE';
+
+/**
+ * POST { accion: 'preinscripcion', tarifa, datos, codigo? }: la landing la envía justo antes de abrir
+ * la ventana con el botón guardado de PayPal. Ese botón no le avisa a la página cuando se paga,
+ * así que la fila queda con "Referencia de pago" = PENDIENTE: al ver el pago en PayPal, el equipo
+ * escribe ahí el número de transacción y la fila cuenta como inscrito (y ocupa cupo).
+ */
+function preinscripcion(body) {
+  let datos = body.datos || {};
+  let solicitud = null;
+  if (body.tarifa === 'estudiante') {
+    solicitud = body.codigo ? buscarSolicitud(String(body.codigo)) : null;
+    if (!solicitud || solicitud.estado !== 'Aprobado') return json({ ok: false, error: 'La tarifa de estudiante requiere un carné aprobado.' });
+    datos = solicitud.datos;
+  }
+  const faltan = ['nombre', 'correo', 'whatsapp', 'ciudad', 'ocupacion', 'experiencia', 'talla'].filter(function (k) {
+    return !String(datos[k] || '').trim();
+  });
+  if (faltan.length) return json({ ok: false, error: 'Faltan datos de la inscripción.' });
+  const t = TARIFAS[body.tarifa];
+  const hoy = hoyHN();
+  if (!t || hoy < t.desde || hoy > t.hasta) return json({ ok: false, error: 'Esa tarifa ya no está disponible.' });
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(25000);
+  try {
+    const hoja = hojaInscritos();
+    const registro = {};
+    registro['Fecha de pago'] = new Date();
+    registro['Nombre (diploma y gafete)'] = limpio(datos.nombre);
+    registro['Correo'] = limpio(datos.correo);
+    registro['WhatsApp'] = "'" + String(datos.whatsapp || '').trim().slice(0, 30);
+    registro['Ciudad'] = limpio(datos.ciudad);
+    registro['Ocupación'] = limpio(datos.ocupacion);
+    registro['Experiencia'] = limpio(datos.experiencia);
+    registro['Talla de camiseta'] = limpio(datos.talla);
+    registro['¿Cómo se enteró?'] = limpio(datos.comoSeEntero);
+    registro['Restricciones alimentarias'] = limpio(datos.restricciones);
+    registro['Acepta comunicaciones'] = datos.comunicaciones ? 'Sí' : 'No';
+    registro['Tarifa'] = t.nombre;
+    registro['Precio (L)'] = t.hnl;
+    registro['Monto cobrado'] = t.usd;
+    registro['Moneda'] = 'USD';
+    registro['Pasarela'] = 'PayPal (botón)';
+    registro['Referencia de pago'] = PAGO_PENDIENTE;
+    registro['Correo enviado'] = 'No';
+    registro['Carné verificado'] = !!solicitud;
+    registro['Notas'] = 'Datos recibidos; verificar el pago en PayPal y escribir aquí el número de transacción en "Referencia de pago".';
+
+    // Si la misma persona vuelve a intentarlo, actualizar su fila pendiente en vez de duplicarla
+    const fila = buscarPendiente(hoja, String(datos.correo || '').trim().toLowerCase());
+    const valores = [COLUMNAS.map(function (c) { return registro[c] === undefined ? '' : registro[c]; })];
+    if (fila) hoja.getRange(fila, 1, 1, COLUMNAS.length).setValues(valores);
+    else hoja.appendRow(valores[0]);
+    SpreadsheetApp.flush();
+  } catch (err) {
+    console.error(err);
+    return json({ ok: false, error: 'No pudimos guardar tus datos.' });
+  } finally {
+    lock.releaseLock();
+  }
+  return json({ ok: true });
+}
+
+function buscarPendiente(hoja, correo) {
+  const n = hoja.getLastRow() - 1;
+  if (n < 1 || !correo) return 0;
+  const filas = hoja.getRange(2, 1, n, COLUMNAS.length).getValues();
+  for (let i = filas.length - 1; i >= 0; i--) {
+    if (String(filas[i][COL['Correo'] - 1]).trim().toLowerCase() === correo &&
+        String(filas[i][COL['Referencia de pago'] - 1]) === PAGO_PENDIENTE) return i + 2;
+  }
+  return 0;
 }
 
 // ---------- Tarifa de estudiante ----------
@@ -686,10 +767,13 @@ function contarInscritos() {
   const hoja = hojaInscritos();
   const n = hoja.getLastRow() - 1;
   if (n < 1) return { total: 0, estudiantes: 0 };
-  const tarifas = hoja.getRange(2, COL['Tarifa'], n, 1).getValues();
+  // Las preinscripciones con pago sin verificar (PENDIENTE) no ocupan cupo
+  const filas = hoja.getRange(2, 1, n, COLUMNAS.length).getValues().filter(function (r) {
+    return r[COL['Tarifa'] - 1] && String(r[COL['Referencia de pago'] - 1]) !== PAGO_PENDIENTE;
+  });
   return {
-    total: tarifas.filter(function (r) { return r[0]; }).length,
-    estudiantes: tarifas.filter(function (r) { return r[0] === 'Estudiante'; }).length,
+    total: filas.length,
+    estudiantes: filas.filter(function (r) { return r[COL['Tarifa'] - 1] === 'Estudiante'; }).length,
   };
 }
 

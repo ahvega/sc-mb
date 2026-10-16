@@ -212,7 +212,7 @@
 
   function mostrarPago(t) {
     tarifa = t;
-    if (conBotones) return abrirVentanaPago();
+    if (conBotones) return preinscribir();
     pintarResumen(q('[data-summary]'));
     q('[data-back]').hidden = !!codigo;
     ver('pago');
@@ -243,6 +243,16 @@
   // El botón cobra el precio fijo guardado en PayPal; PayPal envía el recibo al participante y a la cuenta.
   var ventana = q('[data-pp-modal]');
   var nVentana = 0;
+
+  // Con backend, guarda los datos en la hoja (pago PENDIENTE) antes de abrir la ventana.
+  // Si falla, la ventana se abre igual: el botón de WhatsApp lleva los datos.
+  function preinscribir() {
+    if (!API) return abrirVentanaPago();
+    ocupado(true, 'Guardando tus datos…');
+    api('POST', { accion: 'preinscripcion', tarifa: tarifa.id, datos: datos, codigo: codigo })
+      .catch(function () {})
+      .then(function () { ocupado(false); abrirVentanaPago(); });
+  }
 
   function abrirVentanaPago() {
     var id = BOTONES[tarifa.id];
