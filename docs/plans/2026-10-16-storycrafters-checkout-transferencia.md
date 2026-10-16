@@ -1,6 +1,6 @@
 # Plan de implementación — STORYCRAFTERS: checkout por tarjeta o transferencia
 
-**Status: draft — pending independent adversarial review**
+**Status: reconciled — adversarial findings incorporated; product gates open**
 **Fecha:** 2026-10-16
 **Issue:** [#20](https://github.com/ahvega/sc-mb/issues/20)
 **Especificación aprobada:** [Spec v3](../specs/2026-10-16-storycrafters-paypal-modal-spec.md), `Status: approved by owner 2026-10-16`.
@@ -131,3 +131,100 @@ flowchart TD
 **Decisión del propietario:** se ha facilitado una **cuenta BAC de ahorro, denominación HNL, con titular persona natural también beneficiaria**, para pruebas internas únicamente. Sus datos concretos se compartieron en conversación privada; **no copiar el número ni el nombre a repositorio público, variables versionadas, fixtures, capturas o logs**. El operador debe instalar esos datos mediante configuración no versionada y restringida (p. ej. Script Properties separadas para entorno de pruebas). La UI de pruebas podrá leerlos desde un endpoint protegido cuando corresponda; evitar exponer la cuenta en producción o staging público.
 
 **Gate de producción obligatorio:** obtener del propietario los datos de la cuenta empresarial definitiva de **Media Builders**, reemplazar completamente la configuración de prueba, comprobar en una inspección E2E que no hay referencia a la cuenta temporal y confirmar explícitamente el beneficiario, moneda HNL, tipo y tarifas de transferencia. Registrar el resultado sin publicar números. **No fusionar activación de transferencias reales sin superar este gate.** La aprobación de los comprobantes sigue siendo exclusivamente humana y manual tras comprobar el abono bancario.
+
+## 5. Reconciliación adversarial — decisión final del plan (16-oct-2026)
+
+**Fuentes realmente verificadas:** [revisión Devin/SWE (F1–F11)](https://github.com/ahvega/sc-mb/pull/27#pullrequestreview-5553716986) y [revisión Codex/GPT-6 (R1–R7)](https://github.com/ahvega/sc-mb/pull/27#issuecomment-6224876866). No hay revisión firmada explícitamente por Astra visible en la conversación de PR consultada; no atribuirle hallazgos. Ambos revisores señalaron problemas de diseño, **no** fallos reproducidos en producción. **18 observaciones incorporadas** en el contrato de ejecución siguiente; F10/F11 son mejoras no bloqueantes, R7 corrección documental.
+
+### 5.1 Decisiones normativas que sustituyen propuestas ambiguas de las unidades A–H
+
+**R1 + F1 — Un único dueño de notificaciones, outbox real y entrega desconocida (B/E/G/H; bloqueante).**
+- El único emisor de bienvenida será un worker de `Notificaciones` disparado por la transición de pago verificada. Retirar/reencaminar `procesarPagoVerificado` y `alEditarHoja`: **no pueden enviar bienvenida directamente**. Eliminar posibilidad de un segundo emisor desde ruta legacy.
+- Modelo de salida: `eventKey=registrationId:paymentCompletionVersion:channel:templateVersion`, `queued / claimed / sent / failed / delivery_unknown`, timestamp, lease del worker, intentos, `providerMessageId` si existe y política de recuperación. Crear/reparar eventos faltantes a partir de `Completado` mediante reconciliador que **no vuelve a aprobar** pagos. Sembrar el historial a partir de `Correo enviado` legada para prevenir reenvíos históricos.
+- Si el proveedor acepta el envío y se pierde el ACK, **no reintentar ciegamente**: consultar acuse/estado del proveedor si es posible; de lo contrario `delivery_unknown`, revisión operativa y resolución explícita. MailApp carece de garantía de envío exactamente una vez; **objetivo real: eventos únicos + recuperación y deduplicación best-effort con excepción visible**, no promesa falsa de entrega exactly once.
+- Pruebas: doble trigger heredado, caída entre cambio de estado/encolado, caída tras aceptación/antes de `sent`, workers concurrentes, email OK/WA fallido, reconciliación sin duplicar.
+
+**R2 — Intentos de pago y cambio seguro de método (B/C/F; bloqueante).**
+- Persistir `Intentos de Pago`: identificador, registro, método, estado `selected / launched / in_progress / unknown / verified / definitively_failed / cancelled_confirmed`, hora, evidencia y operador de conciliación. La transición a `launched` ocurre **antes de exponer/invocar el Hosted Button**; dado que un Hosted Button no emite un callback confiable de cancelación, después de lanzarlo el servidor debe asumir estado **unknown** hasta verificación/operador.
+- La UI ofrece ambos métodos en un registro **sin intentos activos**. Una vez iniciado PayPal, impedir desde servidor cambiar a transferencia/cargar comprobante o volver a cobrar hasta resolución humana de intento potencialmente cobrado. Cerrar modal, recargar o abrir segunda pestaña **no desbloquea**. Si el lanzamiento falló antes de abrir PayPal con evidencia verificable, reactivar de forma segura.
+- Un cargo PayPal tardío luego de acreditación bancaria se anota como **segundo settlement/disputa** para conciliación/devolución humana, no sobrescribe la primera referencia ni envía otra bienvenida. Pruebas multi-tab, cerrar/reabrir, checkout todavía abierto, settle tardío y carrera.
+
+**R3 + F7 — Arquitectura administrativa auténtica y una autoridad de transición (A/B/F/H; bloqueante).**
+- **Decisión arquitectónica:** mantener backend público Apps Script independiente **solo para preinscripción/subida**, y crear una **interfaz administrativa separada** (proyecto vinculado a la hoja, menú/diálogo o servicio interno) que **no contenga credenciales ni acción de aprobación accesible desde el endpoint público**. La escritura final del estado deberá ejecutarse en **una autoridad serializada única**. Un `ScriptLock` de dos proyectos distintos **no es lock compartido**. Evitar que dos proyectos muten concurrentemente referencias/estados: elegir un único proyecto propietario de los cambios de pago, o introducir un almacenamiento/servicio de mutación transaccional compartido; no declararlo resuelto solo instalando ambos scripts.
+- Menú `Confirmar pago verificado` para **transferencias y PayPal**, que exige identidad autenticada y allowlist real de operadores. Si identidad humana no está disponible (`Session.getActiveUser()`, `e.user` pueden ser vacíos o engañosos), **rechazar**, sin imputar la identidad del instalador. Proteger hoja/columnas contra cambios directos; `onEdit` no acreditará ni enviará: registra intento de edición fuera de procedimiento para revisión/reversión. Ningún `doPost` público puede aprobar pagos.
+- La unidad A debe cerrar con un **ADR administrativo** que especifique proyecto propietario de mutaciones, instalación real de menú vinculado, credenciales, permisos Drive/Sheets, allowlist, origen de identidad y punto único de serialización **antes de programar B/F**. Probar editor no autorizado, llamada anónima y carreras admin/backend.
+
+**R4 + F4 — Libro de acreditaciones y asociación verificable (B/F; bloqueante).**
+- Crear ledger `Acreditaciones`: `settlementKey` **único global** por método+cuenta receptora+identificador de movimiento/txn PayPal, importe, moneda, fecha, evidencia, `registrationId`, actor y estado. Bajo la misma autoridad de serialización, **reservar/consumir settlementKey una sola vez en todas las inscripciones**, y reconciliar escrituras parciales mediante estado intermedio verificable. Fotos iguales o transformadas no son claves de settlement.
+- Verificación PayPal también requiere **aprobación operativa auditable** mientras Hosted Buttons no suministren enlace de pedido confiable: el operador contrasta `transactionId`, pagador, cuenta, importe USD, moneda, hora y registro; coincidencia de correo no es suficiente. No marcar completado ante empate ambiguo; registrar como pago huérfano e investigar.
+- Verificación de transferencia sigue **exclusivamente manual y humana contra movimientos bancarios reales**; comprobante/IA/OCR/webhook jamás la aprueban. Exigir referencia y actor verificado, no solo cambiar `Referencia de pago` en la celda. Tests reutilización de crédito en 2 inscripciones, imágenes recortadas, dos operadores, crash parcial y asignación ambigua PayPal.
+
+**R5 — Límite real de Hosted Buttons públicos (A/C/H; gate de producto bloqueante para prometer la invariante absoluta).**
+- Los 3 links Hosted Buttons son reutilizables fuera de la landing, incluso por usuarios **sin inscripción**. Bloquear la UI al fallar `preinscripcion` previene *el camino normal*, **pero no garantiza globalmente “ningún cobro sin registro”**.
+- **Gate de decisión dueño/PayPal antes de declarar listo para producción:** probar en Sandbox el link copiado, revisar con proveedor si admite requisito de registro/metadata verificable. Si no lo admite, **(i)** migrar el cobro a órdenes PayPal creadas servidor con `registrationId` verificado, preservando modal de elección y UX, **o (ii)** documentar/aceptar explícitamente la excepción de cobros huérfanos externos con cola de conciliación y procedimiento de reembolso. La opción (ii) **no satisface** el invariante absoluto y no podrá anunciarse como tal. No reemplazar Hosted Buttons sin decisión aprobada de dueño y plan de regresión.
+- Crear registro de pagos huérfanos y playbook de soporte, y probar acceso al enlace directo sin registro.
+
+**R6 + F11 — Control de abuso y presupuestos (A/B/D/E/H; gate de producción).**
+- Proteger preinscripciones/subidas públicas con rate limit por entidad e IP/gateway confiable (no confiar en IP aportada por cliente), challenge/confirmación de contacto cuando sea necesario, expiración de tokens y topes globales y por registro en cantidad de archivos, bytes, intentos, mensajes y costo de proveedor. Antes de Drive o encolar emails/WA verificar cuota y saldo de presupuesto; reservar capacidad de mensajes para pagos confirmados, registrar denegaciones y circuit breaker con alerta.
+- Determinar **límites y cuotas vigentes del entorno real** para MailApp/Apps Script/Drive/WA (no fijar un “25 MB” como constante universal sin comprobar), y testear ráfagas distribuidas, muchas cuentas nuevas, archivos distintos y retry storms; rechazos no consumen espacio ni notifican.
+
+**F2 — Separación estricta de cuenta de pruebas (A/C/H; bloqueante).**
+- Banco BAC temporal: **solo entorno sandbox restringido**, en Script Properties de proyecto/despliegue separado del de producción, no en `main`, HTML publicado, frontend de producción, PR ni logs. No es suficiente un `doGet` “protegido” en una web app pública: separar entornos y exigir token de preinscripción con vigencia/autoridad antes de devolver cuenta y monto. Feature flag `TRANSFERENCIAS_PRUEBA` adicional no reemplaza separación física/lógica.
+- Publicación de cuenta real de Media Builders, importe HNL por tarifa y autorización del dueño son gates; verificar que ningún bundle/endpoint público de producción exponga la cuenta personal temporal.
+
+**F3 — Capability segura de upload (B/D; bloqueante).**
+- `registrationId` UUID no secuencial **no sustituye** autenticación. Crear token aleatorio de subida distinto del ID y secreto en servidor (almacenar hash), ligado a registro y alcance, con expiración, un uso o renovaciones controladas. No numerar filas como credencial. Solo permitir subir/reemplazar con validación de estado, límite de reemplazos y acción explícita para habilitar reenvío; no filtrar tokens en links/logs/hojas visibles. Validar ownership, MIME real, dimensiones y bytes en backend.
+
+**F5 — Estudiantes: consumo real de código (B/F; criterio de aceptación).**
+- Persistir vínculo entre `registrationId`, código de estudiante y fila de aprobación. En confirmación humana de **cualquier** método, marcar `Estudiantes: Pagado (referencia)` y consumir uso una sola vez, con locking; prohibir reutilización del código desde otra sesión, tabs o intento de pago. Pruebas de cupón reutilizado, cambio de método y doble confirmación.
+
+**F6 — Política explícita de cupos (A/B/F; gate del dueño).**
+- Propuesta conservadora hasta decisión final: **`Pendiente`, incluido `Comprobante recibido`, NO reserva cupo**. Al aprobar humano, verificar cupo aún disponible bajo lock; si ya está lleno, registrar `Pago recibido — cupo no disponible`, escalar devolución/alternativa, **no** emitir bienvenida ni contar asiento. Mostrar advertencia antes de iniciar transferencia. Para reserva temporal, exigir nueva decisión de dueño que defina TTL/cupo reservado y escenario sobreventa; no inventarlo tácitamente.
+
+**F8 — Retirar ruta legacy de aprobación (B/C; bloqueante).**
+- Deshabilitar permanentemente flujo alternativo `paypal.Buttons` + `doPost` que escribe referencia real/manda confirmación directamente; o enrutarlo completamente al mismo ledger y transición validada. Test negativo: quitar `data-paypal-botones` o agregar `data-paypal-client-id` **no** puede reactivar cobro que omita registro/estados.
+
+**F9 — Instrucciones bancarias persistentes al participante (C/E; obligatorio).**
+- Tras seleccionar Transferencia, enviar **correo al participante** con datos bancarios autorizados, importe HNL, moneda, referencia y procedimiento para comprobante, para que no desaparezcan al cerrar modal. WhatsApp saliente solo si proveedor autorizado/plantilla; en ausencia ofrecer enlace manual y registrar entrega no efectuada. No enviar información de banco temporal a participantes reales en entorno de producción.
+
+**F10 — Reutilización controlada de conversión de imagen (D; mejora).**
+- Reusar donde sea apropiado `prepararArchivo` del carné (redimensión JPEG/6 MB del cliente) pero aislar comprobantes, aplicar validación real también en servidor, preservar legibilidad de texto y permitir alternativas cuando el recorte degrade la evidencia. No confiar en canvas/MIME del cliente.
+
+**R7 — Corrección de checklist (spec/H).**
+- Criterio inequívoco: **transferencia solo se aprueba manualmente por humano autorizado**; incluso OCR perfecto, imagen realista, API bancaria o webhook no pueden finalizar pago automáticamente. Automatización PayPal verificada es distinta y solo después de compatibilidad real y decisión del dueño.
+
+### 5.2 Contratos y gates de entrega ejecutables
+
+| Gate | Requisito verificable | Responsable | Si falla |
+|---|---|---|---|
+| G0 — arquitectura | ADR firmado: una autoridad de mutación, admin autenticado, Hosted Buttons y estrategia de enlaces huérfanos | Arquitecto + dueño | No iniciar B/F |
+| G1 — pagos | Sheets guarda antes de modal; intentos bloquean cambio inseguro; ledger evita acreditación cruzada; legacy anulada | Backend + QA | No cobrar |
+| G2 — privacidad | Cuenta BAC pruebas aislada, número/titular ausentes de código/producción, upload capabilities seguras, Drive privado | Seguridad + dueño | No habilitar Transferencia |
+| G3 — humano | Cotejo bancario externo + operador autenticado; no automatización de transferencias; auditoría obligatoria | Operador + QA | Seguir Pendiente |
+| G4 — mensajería | Emisor único + outbox, `delivery_unknown`, adjunto email y media WhatsApp si realmente configurada; mensaje al participante | Backend + Operaciones | No afirmar envío |
+| G5 — release | Pruebas técnicas y de cuotas, errores, cupos, estudiantes, rollback y migración; cuenta Media Builders final | QA + dueño | Mantener flag apagado |
+
+**Trazabilidad de revisiones (ledger):**
+
+| Hallazgo | Resolución aceptada | Etapa |
+|---|---|---|
+| Devin F1 | Redirigir antiguo emisor; outbox dueño único | B/G |
+| Devin F2 | Ambientes separados, no endpoint público “protegido” ficticio | A/H |
+| Devin F3 | Token de carga aleatorio vinculado al registro | B/D |
+| Devin F4 | Ledger, conciliación humana PayPal con evidencia | B/F |
+| Devin F5 | Consumir código estudiantil al acreditar | B/F |
+| Devin F6 | Pendiente no reserva cupo, decisión del dueño | A/B/F |
+| Devin F7 | Acción admin protegida y bloquear onEdit como aprobación | F |
+| Devin F8 | Eliminar/encaminar ruta legacy | B/C |
+| Devin F9 | Email de instrucciones bancarias al participante | E |
+| Devin F10 | Reutilizar pipeline de fotos con validación servidor | D |
+| Devin F11 | Límites vigentes y pruebas explícitas de cuotas | H |
+| Codex R1 | Outbox recuperable, estado `delivery_unknown` | E/G |
+| Codex R2 | Intentos de pago, bloqueo de segundo método | B/C |
+| Codex R3 | Proyecto admin vinculado + autoridad serial única, ADR obligatorio | A/F |
+| Codex R4 | SettlementKey único global | B/F |
+| Codex R5 | Gate capacidad Hosted Buttons; aceptar excepción o cambiar modalidad | A/H |
+| Codex R6 | Throttling y presupuestos agregados | A/D/E |
+| Codex R7 | Corregir condición de aceptación bancaria humana | Spec/H |
+
+**Estado del plan tras reconciliación:** `reconciled — design ready for implementation planning, with owner/product gates G0/G2/G5 unresolved`. Esta revisión documental **no equivale** a pruebas E2E ni a aprobación de lanzamiento. No adjudica ninguna revisión al modelo Astra sin evidencia. No implementar pagos en producción mientras los gates sigan abiertos.
