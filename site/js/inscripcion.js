@@ -85,6 +85,22 @@
   }
   qa('input[name="tipo"]').forEach(function (r) { r.addEventListener('change', actualizarTipo); });
 
+  // Ciudad: la lista de sugerencias solo muestra lo que coincide con lo escrito. Al entrar al campo
+  // se vacía (la ciudad anterior queda de guía) para volver a ver todas; si no elige otra, se restaura.
+  var ciudad = form.elements.ciudad;
+  var guiaCiudad = ciudad.placeholder;
+  ciudad.addEventListener('focus', function () {
+    if (!ciudad.value) return;
+    ciudad.dataset.anterior = ciudad.value;
+    ciudad.placeholder = ciudad.value;
+    ciudad.value = '';
+  });
+  ciudad.addEventListener('blur', function () {
+    if (!ciudad.value.trim() && ciudad.dataset.anterior) ciudad.value = ciudad.dataset.anterior;
+    delete ciudad.dataset.anterior;
+    ciudad.placeholder = guiaCiudad;
+  });
+
   form.addEventListener('submit', function (e) {
     e.preventDefault();
     if (enviando) return;
