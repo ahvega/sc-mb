@@ -248,16 +248,35 @@
     var id = BOTONES[tarifa.id];
     if (!id) return error('No encontramos el botón de pago para la tarifa ' + tarifa.nombre + '. Escríbenos a info@themediabuilders.com.');
     pintarResumen(ventana.querySelector('[data-pp-resumen]'));
+    // El botón guardado no recibe los datos: que el participante nos los envíe ya escritos
+    ventana.querySelector('[data-pp-wa]').href = 'https://wa.me/50492520327?text=' + encodeURIComponent([
+      'Hola, ya pagué mi inscripción a STORYCRAFTERS (' + tarifa.nombre + ', ' + dolares(tarifa.usd) + '). Mis datos:',
+      'Nombre: ' + datos.nombre,
+      'Correo: ' + datos.correo,
+      'WhatsApp: ' + datos.whatsapp,
+      'Ciudad: ' + datos.ciudad,
+      'Ocupación: ' + datos.ocupacion,
+      'Experiencia: ' + datos.experiencia,
+      'Talla de camiseta: ' + datos.talla,
+      'Restricciones alimentarias: ' + (datos.restricciones || 'ninguna'),
+      'Cómo se enteró: ' + (datos.comoSeEntero || '-'),
+      'Acepta comunicaciones: ' + (datos.comunicaciones ? 'sí' : 'no')
+    ].join('\n'));
     var cont = ventana.querySelector('[data-pp-boton]');
     var aviso = ventana.querySelector('.insc__error');
     aviso.textContent = '';
     cont.innerHTML = '';
-    cont.id = 'paypal-container-' + id + '-' + (++nVentana);
+    var esta = ++nVentana;
+    cont.id = 'paypal-container-' + id + '-' + esta;
     if (ventana.showModal) ventana.showModal(); else ventana.setAttribute('open', '');
     cargarSdk('https://www.paypal.com/sdk/js?client-id=' + encodeURIComponent(BOTONES_CLIENT) +
       '&components=hosted-buttons&disable-funding=venmo&currency=USD')
-      .then(function (paypal) { return paypal.HostedButtons({ hostedButtonId: id }).render('#' + cont.id); })
-      .catch(function () { aviso.textContent = 'No pudimos cargar PayPal. Recarga la página e intenta de nuevo.'; });
+      .then(function (paypal) {
+        // Si la ventana se cerró y se volvió a abrir mientras cargaba PayPal, solo pinta la última
+        if (esta !== nVentana) return;
+        return paypal.HostedButtons({ hostedButtonId: id }).render('#' + cont.id);
+      })
+      .catch(function () { if (esta === nVentana) aviso.textContent = 'No pudimos cargar PayPal. Recarga la página e intenta de nuevo.'; });
   }
 
   function cerrarVentana() {
@@ -265,7 +284,12 @@
   }
   ventana.querySelector('[data-pp-cerrar]').addEventListener('click', cerrarVentana);
   // Clic en el fondo oscuro también cierra
-  ventana.addEventListener('click', function (e) { if (e.target === ventana) cerrarVentana(); });
+  // (solo fuera del recuadro: un clic en el relleno de la ventana también tiene e.target === ventana)
+  ventana.addEventListener('click', function (e) {
+    if (e.target !== ventana) return;
+    var r = ventana.getBoundingClientRect();
+    if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) cerrarVentana();
+  });
 
   function pintarBotonPago() {
     var cont = q('[data-paypal]');
