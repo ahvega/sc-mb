@@ -385,6 +385,16 @@ body::before {
   padding-top: 12px;
 }
 .speaker__bio { font-size: 14px; line-height: 1.6; color: var(--text-muted); text-wrap: balance; }
+.speaker__ig {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--tan);
+}
+.speaker__ig:hover { color: var(--accent); }
 
 /* ---------- Agenda ---------- */
 .agenda { display: flex; flex-direction: column; gap: 10px; }
