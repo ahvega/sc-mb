@@ -28,7 +28,9 @@ La página cobra con los 3 botones guardados de PayPal (`docs/paypal-botones.md`
 
 1. La persona llena el formulario. Antes de abrir la ventana de pago, sus datos se guardan en la pestaña **Inscritos** con **Referencia de pago** = `PENDIENTE`.
 2. Paga en la ventana con el botón de su tarifa. PayPal les manda el recibo a ella y a ti, pero **no le avisa a la hoja**.
-3. Cuando veas el pago en PayPal, busca a esa persona en **Inscritos** (por nombre o correo) y cambia `PENDIENTE` por el **número de transacción** de PayPal.
+3. Cuando veas el pago en PayPal, busca a esa persona en **Inscritos** (por nombre o correo) y cambia `PENDIENTE` por el **número de transacción** de PayPal. En ese momento le llega sola su **correo de bienvenida** personalizado y **Correo enviado** pasa a `Sí`.
+
+Correos automáticos: al guardar sus datos, la persona recibe "Recibimos tus datos" con su tarifa y monto (uno por correo mientras siga pendiente; **Correo enviado** = `Datos recibidos`), y al verificar el pago, la bienvenida.
 
 Las filas `PENDIENTE` no ocupan cupo ni salen en **Gafetes**; en **Control**, la fila **Pagos por verificar en PayPal** dice cuántas hay. Si alguien lo intenta dos veces, verás dos filas pendientes con su correo: deja la que coincida con el pago y borra la otra.
 

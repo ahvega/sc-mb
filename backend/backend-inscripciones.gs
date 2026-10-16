@@ -338,8 +338,11 @@ function preinscripcion(body) {
 
   const lock = LockService.getScriptLock();
   lock.waitLock(25000);
+  let avisar = false;
   try {
     const hoja = hojaInscritos();
+    // Un solo correo de "datos recibidos" por dirección mientras siga pendiente (la página es pública)
+    avisar = !tienePendiente(hoja, String(datos.correo || '').trim().toLowerCase());
     const registro = {};
     registro['Fecha de pago'] = new Date();
     registro['Nombre (diploma y gafete)'] = limpio(datos.nombre);
@@ -358,7 +361,7 @@ function preinscripcion(body) {
     registro['Moneda'] = 'USD';
     registro['Pasarela'] = 'PayPal (botón)';
     registro['Referencia de pago'] = PAGO_PENDIENTE;
-    registro['Correo enviado'] = 'No';
+    registro['Correo enviado'] = avisar ? 'Datos recibidos' : 'No (repetido)';
     registro['Carné verificado'] = !!solicitud;
     registro['Notas'] = 'Datos recibidos; verificar el pago en PayPal y escribir aquí el número de transacción en "Referencia de pago".';
 
@@ -372,7 +375,58 @@ function preinscripcion(body) {
   } finally {
     lock.releaseLock();
   }
+
+  if (avisar) {
+    try {
+      const saludo = limpio(datos.nombre).split(' ')[0] || 'storycrafter';
+      enviarCorreoSimple(limpio(datos.correo), '¡Hola ' + saludo + '! Recibimos tus datos para STORYCRAFTERS',
+        'Recibimos tus <span>datos</span>',
+        ['¡Hola, ' + saludo + '! Ya tenemos tus datos para la masterclass STORYCRAFTERS (' + EVENTO.fecha + ').',
+         'Para asegurar tu lugar, completa tu pago de USD ' + t.usd + ' (tarifa ' + t.nombre + ') en la ventana de PayPal de la página.',
+         'Si ya pagaste, no tienes que hacer nada más: en cuanto confirmemos tu pago te llegará el correo de bienvenida. ' +
+           '¿Dudas? Responde este correo o escríbenos al ' + WHATSAPP_EQUIPO + '.'],
+        { texto: 'Ir a la inscripción', url: LANDING_URL + '#inscripcion' });
+    } catch (err) {
+      console.error('Correo de datos recibidos no enviado: ' + err);
+    }
+  }
   return json({ ok: true });
+}
+
+function tienePendiente(hoja, correo) {
+  const n = hoja.getLastRow() - 1;
+  if (n < 1 || !correo) return false;
+  return hoja.getRange(2, 1, n, COLUMNAS.length).getValues().some(function (r) {
+    return String(r[COL['Correo'] - 1]).trim().toLowerCase() === correo &&
+      String(r[COL['Referencia de pago'] - 1]) === PAGO_PENDIENTE;
+  });
+}
+
+/**
+ * Inscritos: cuando el equipo cambia PENDIENTE por el número de transacción de PayPal,
+ * se envía el correo de bienvenida (una sola vez por fila: "Correo enviado" = Sí).
+ */
+function procesarPagoVerificado(hoja, fila) {
+  const v = hoja.getRange(fila, 1, 1, COLUMNAS.length).getValues()[0];
+  const get = function (c) { return v[COL[c] - 1]; };
+  const ref = String(get('Referencia de pago')).trim();
+  if (!ref || ref === PAGO_PENDIENTE || String(get('Correo enviado')) === 'Sí' || !get('Correo')) return;
+  const id = Object.keys(TARIFAS).filter(function (k) { return TARIFAS[k].nombre === get('Tarifa'); })[0];
+  if (!id) return;
+  try {
+    enviarConfirmacion({
+      nombre: String(get('Nombre (diploma y gafete)')),
+      correo: String(get('Correo')),
+      tarifa: TARIFAS[id],
+      monto: get('Monto cobrado') || TARIFAS[id].usd,
+      moneda: get('Moneda') || 'USD',
+      captura: ref.replace(/[<>&"]/g, ''),
+    });
+    hoja.getRange(fila, COL['Correo enviado']).setValue('Sí');
+  } catch (err) {
+    console.error('Bienvenida no enviada: ' + err);
+    hoja.getRange(fila, COL['Correo enviado']).setValue('Error: ' + err);
+  }
 }
 
 // ---------- Tarifa de estudiante ----------
@@ -573,7 +627,14 @@ function revisarCarneConClaude(bytes, tipo, nombre, institucion) {
 /** Disparador instalable: al cambiar el Estado de una solicitud, envía el correo al estudiante. */
 function alEditarHoja(e) {
   const hoja = e.range.getSheet();
-  if (hoja.getName() !== 'Estudiantes' || e.range.getRow() < 2) return;
+  if (e.range.getRow() < 2) return;
+  if (hoja.getName() === 'Inscritos') {
+    const c = COL['Referencia de pago'];
+    if (e.range.getColumn() > c || e.range.getLastColumn() < c) return;
+    for (let fila = e.range.getRow(); fila <= e.range.getLastRow(); fila++) procesarPagoVerificado(hoja, fila);
+    return;
+  }
+  if (hoja.getName() !== 'Estudiantes') return;
   if (e.range.getColumn() > COL_EST['Estado'] || e.range.getLastColumn() < COL_EST['Estado']) return;
   for (let fila = e.range.getRow(); fila <= e.range.getLastRow(); fila++) procesarEstado(hoja, fila);
 }
