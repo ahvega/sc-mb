@@ -13,7 +13,6 @@
   if (!root) return;
 
   var API = root.dataset.appsScriptUrl;
-  var PAYPAL_ID = root.dataset.paypalClientId;
   var local = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
   // Botones guardados en PayPal: { idTarifa: Id. hospedado }. Con ellos el pago se abre en una ventana.
   var BOTONES = null;
@@ -32,6 +31,7 @@
 
   var form = root.querySelector('[data-view="datos"]');
   var datos = {}, tarifa = null, codigo = null, enviando = false;
+  var regId = null, idem = null; // registro del backend y clave de idempotencia del envío actual
 
   var q = function (sel) { return root.querySelector(sel); };
   var qa = function (sel) { return Array.prototype.slice.call(root.querySelectorAll(sel)); };
@@ -119,6 +119,7 @@
     ['nombre', 'correo', 'whatsapp', 'ciudad', 'ocupacion', 'experiencia', 'talla', 'comoSeEntero', 'restricciones']
       .forEach(function (k) { datos[k] = form.elements[k].value.trim(); });
     datos.comunicaciones = form.elements.comunicaciones.checked;
+    idem = null; // envío nuevo: nueva clave de idempotencia
 
     if (esEstudiante()) {
       if (!API && !demo) return error('La inscripción de estudiantes abre muy pronto. Escríbenos a info@themediabuilders.com.');
@@ -228,7 +229,7 @@
 
   function mostrarPago(t) {
     tarifa = t;
-    if (conBotones) return preinscribir();
+    if (API || conBotones) return preinscribir();
     pintarResumen(q('[data-summary]'));
     q('[data-back]').hidden = !!codigo;
     ver('pago');
@@ -261,18 +262,36 @@
   var nVentana = 0;
 
   // Con backend, guarda los datos en la hoja (pago PENDIENTE) antes de abrir la ventana.
-  // Si falla, la ventana se abre igual: el botón de WhatsApp lleva los datos.
+  // Si falla o no contesta, NO se abre el cobro: un pago sin registro no se puede conciliar.
+  // En un timeout se reintenta UNA vez con la misma clave de idempotencia: el servidor devuelve
+  // el registro ya creado en vez de duplicarlo.
   var datosGuardados = false;
   function preinscribir() {
     datosGuardados = false;
+    regId = null;
     if (!API) return abrirVentanaPago();
+    if (!idem) idem = (crypto.randomUUID ? crypto.randomUUID() : 'i' + Date.now() + '-' + Math.random().toString(36).slice(2));
     ocupado(true, 'Guardando tus datos…');
-    // Máximo 20 s (el script de Google puede tardar al despertar): si tarda más, se abre el pago igual
-    var espera = new Promise(function (ok) { setTimeout(ok, 20000); });
-    Promise.race([api('POST', { accion: 'preinscripcion', tarifa: tarifa.id, datos: datos, codigo: codigo }), espera])
-      .then(function (res) { datosGuardados = !!(res && res.ok); })
-      .catch(function () {})
-      .then(function () { ocupado(false); abrirVentanaPago(); });
+    var cuerpo = { accion: 'preinscripcion', tarifa: tarifa.id, datos: datos, codigo: codigo, idempotencia: idem };
+    var espera = new Promise(function (ok) { setTimeout(function () { ok('timeout'); }, 20000); });
+    Promise.race([api('POST', cuerpo), espera])
+      .then(function (res) {
+        if (res === 'timeout') return api('POST', cuerpo).catch(function () { return null; });
+        return res;
+      })
+      .then(function (res) {
+        ocupado(false);
+        if (res && res.ok && res.registrationId) {
+          datosGuardados = true;
+          regId = res.registrationId;
+          return abrirVentanaPago();
+        }
+        error((res && res.error) || 'No pudimos guardar tus datos. No se realizó ningún cobro; intenta de nuevo en unos minutos.');
+      })
+      .catch(function () {
+        ocupado(false);
+        error('No pudimos guardar tus datos. No se realizó ningún cobro; intenta de nuevo en unos minutos.');
+      });
   }
 
   function abrirVentanaPago() {
@@ -303,14 +322,24 @@
     var esta = ++nVentana;
     cont.id = 'paypal-container-' + id + '-' + esta;
     if (ventana.showModal) ventana.showModal(); else ventana.setAttribute('open', '');
-    cargarSdk('https://www.paypal.com/sdk/js?client-id=' + encodeURIComponent(BOTONES_CLIENT) +
-      '&components=hosted-buttons&disable-funding=venmo&currency=USD')
-      .then(function (paypal) {
-        // Si la ventana se cerró y se volvió a abrir mientras cargaba PayPal, solo pinta la última
-        if (esta !== nVentana) return;
-        return paypal.HostedButtons({ hostedButtonId: id }).render('#' + cont.id);
-      })
-      .catch(function () { if (esta === nVentana) aviso.textContent = 'No pudimos cargar PayPal. Recarga la página e intenta de nuevo.'; });
+    // El intento de pago queda registrado ANTES de exponer el botón (R2 del plan): si PayPal
+    // cobra pero la página no se entera, el registro queda trazable para la conciliación.
+    var listo = regId
+      ? api('POST', { accion: 'iniciarPago', registrationId: regId, metodo: 'paypal' })
+          .then(function (res) { return !!(res && res.ok); })
+          .catch(function () { return false; })
+      : Promise.resolve(true); // sin backend (botones solos) no hay registro que marcar
+    listo.then(function (preparado) {
+      if (esta !== nVentana) return;
+      if (!preparado) { aviso.textContent = 'No pudimos preparar el pago. Intenta de nuevo o escríbenos a info@themediabuilders.com.'; return; }
+      cargarSdk('https://www.paypal.com/sdk/js?client-id=' + encodeURIComponent(BOTONES_CLIENT) +
+        '&components=hosted-buttons&disable-funding=venmo&currency=USD')
+        .then(function (paypal) {
+          if (esta !== nVentana) return;
+          return paypal.HostedButtons({ hostedButtonId: id }).render('#' + cont.id);
+        })
+        .catch(function () { if (esta === nVentana) aviso.textContent = 'No pudimos cargar PayPal. Recarga la página e intenta de nuevo.'; });
+    });
   }
 
   function cerrarVentana() {
@@ -325,42 +354,18 @@
     if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) cerrarVentana();
   });
 
+  // La ruta vieja de PayPal (botones JS que cobraban antes de guardar) se retiró en #20:
+  // solo queda el botón de demo local. En producción sin backend no se cobra.
   function pintarBotonPago() {
     var cont = q('[data-paypal]');
     cont.innerHTML = '';
-    if (demo || !PAYPAL_ID) {
-      // Sin PayPal configurado: en local se simula; en producción no se cobra.
-      if (!demo) return error('El pago en línea aún no está habilitado.');
-      var b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'btn btn--primary insc__submit';
-      b.textContent = 'Pagar ' + dolares(tarifa.usd) + ' (demo, sin cobro) →';
-      b.addEventListener('click', function () { confirmar({ pasarela: 'demo', referencia: 'DEMO-' + Date.now() }); });
-      return cont.appendChild(b);
-    }
-    cargarPayPal().then(function (paypal) {
-      paypal.Buttons({
-        style: { layout: 'vertical', color: 'gold', shape: 'rect', label: 'pay', height: 48 },
-        createOrder: function (data, actions) {
-          return actions.order.create({
-            intent: 'CAPTURE',
-            purchase_units: [{
-              description: 'STORYCRAFTERS · ' + tarifa.nombre + ' · ' + datos.nombre.slice(0, 60),
-              amount: { currency_code: 'USD', value: String(tarifa.usd) },
-            }],
-            application_context: { shipping_preference: 'NO_SHIPPING', brand_name: 'STORYCRAFTERS' },
-          });
-        },
-        // El backend verifica el monto, captura el cobro, guarda y envía el correo.
-        onApprove: function (data) { return confirmar({ pasarela: 'paypal', referencia: data.orderID }); },
-        onError: function () { error('PayPal no pudo procesar el pago. No se realizó ningún cobro; intenta de nuevo.'); },
-      }).render(cont);
-    }).catch(function () { error('No pudimos cargar PayPal. Recarga la página e intenta de nuevo.'); });
-  }
-
-  function cargarPayPal() {
-    return cargarSdk('https://www.paypal.com/sdk/js?client-id=' + encodeURIComponent(PAYPAL_ID) +
-      '&currency=USD&intent=capture&components=buttons&locale=es_XC');
+    if (!demo) return error('El pago en línea aún no está habilitado.');
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'btn btn--primary insc__submit';
+    b.textContent = 'Pagar ' + dolares(tarifa.usd) + ' (demo, sin cobro) →';
+    b.addEventListener('click', function () { confirmar({ pasarela: 'demo', referencia: 'DEMO-' + Date.now() }); });
+    return cont.appendChild(b);
   }
 
   var paypalCargado = null;

@@ -80,6 +80,7 @@ function crearEntorno(opciones) {
       return new Range(this, f, c, nf, nc);
     }
     appendRow(fila) { this.filas.push(fila.map(function (x) { return x === undefined ? '' : x; })); }
+    getLastColumn() { return this.filas.reduce(function (m, f) { return Math.max(m, f.length); }, 0); }
     setFrozenRows() { return this; } setColumnWidth() { return this; }
     clear() { this.filas = [[]]; return this; }
   }
@@ -120,9 +121,23 @@ function crearEntorno(opciones) {
         return {
           createFile: function (blob) {
             const id = 'file-' + env.archivos.length;
-            env.archivos.push({ id: id, nombre: blob.nombre, tipo: blob.tipo, bytes: blob.bytes });
-            return { getId: function () { return id; }, getUrl: function () { return 'https://drive.test/' + id; } };
+            const entry = { id: id, nombre: blob.nombre, tipo: blob.tipo, bytes: blob.bytes };
+            env.archivos.push(entry);
+            return {
+              getId: function () { return id; },
+              getUrl: function () { return 'https://drive.test/' + id; },
+              getBlob: function () { return entry; },
+            };
           },
+        };
+      },
+      getFileById: function (id) {
+        const entry = env.archivos.find(function (a) { return a.id === id; });
+        if (!entry) throw new Error('Archivo no encontrado: ' + id);
+        return {
+          getId: function () { return entry.id; },
+          getUrl: function () { return 'https://drive.test/' + entry.id; },
+          getBlob: function () { return entry; },
         };
       },
     },
@@ -130,6 +145,12 @@ function crearEntorno(opciones) {
     SpreadsheetApp: {
       create: function (n) { const s = new SS(n); registry[s.id] = s; return s; },
       openById: function (id) { return registry[id] || null; },
+      getUi: function () {
+        return {
+          createMenu: function () { return { addItem: function () { return this; }, addToUi: function () {} }; },
+          alert: function () {}, showModalDialog: function () {},
+        };
+      },
       flush: function () {},
       newDataValidation: function () {
         return {
@@ -147,23 +168,42 @@ function crearEntorno(opciones) {
         return { _t: t, setMimeType: function () { return this; }, getContent: function () { return this._t; } };
       },
     },
+    CacheService: {
+      getScriptCache: function () {
+        const cache = new Map();
+        return { get: function (k) { return cache.has(k) ? cache.get(k) : null; }, put: function (k, v) { cache.set(k, v); } };
+      },
+    },
     Utilities: {
       // hoyHN() usa esto: la fecha "de hoy" la controla el test con env.setHoy
       formatDate: function (d, tz, fmt) {
-        return fmt === 'yyyy-MM-dd' ? env.hoy : env.hoy + ' 12.00';
+        if (fmt === 'yyyy-MM-dd') return env.hoy;
+        if (fmt === 'yyyy-MM-dd HH:mm') return env.hoy + ' 12:00';
+        return env.hoy + ' 12.00';
       },
       base64Decode: function (b) { return Buffer.from(b, 'base64'); },
       base64Encode: function (bytes) { return Buffer.from(bytes).toString('base64'); },
       getUuid: function () { return crypto.randomUUID(); },
       newBlob: function (bytes, tipo, nombre) { return { bytes: bytes, tipo: tipo, nombre: nombre }; },
+      DigestType: { SHA_256: 'sha256' },
+      Charset: { UTF_8: 'utf8' },
+      computeDigest: function (alg, valor) { return crypto.createHash('sha256').update(String(valor), 'utf8').digest(); },
     },
-    Session: { getActiveUser: function () { return { getEmail: function () { return 'operador@test.local'; } }; } },
+    // El operador que corre el menú de la hoja lo fija el test: opciones.operador (null = sin sesión)
+    Session: {
+      getActiveUser: function () { return { getEmail: function () { return opciones.operador === undefined ? 'operador@test.local' : opciones.operador; } }; },
+      getEffectiveUser: function () { return { getEmail: function () { return opciones.operador === undefined ? 'operador@test.local' : opciones.operador; } }; },
+    },
     ScriptApp: {
       getProjectTriggers: function () { return []; },
       newTrigger: function () {
-        return { forSpreadsheet: function () { return { onEdit: function () { return { create: function () {} }; } }; } };
+        return {
+          forSpreadsheet: function () { return { onEdit: function () { return { create: function () {} }; } }; },
+          timeBased: function () { return { everyHours: function () { return { create: function () {} }; } }; },
+        };
       },
     },
+    HtmlService: { createHtmlOutput: function (h) { return { setWidth: function () { return this; }, setHeight: function () { return this; }, _html: h }; } },
     UrlFetchApp: {
       fetch: function (url, opts) {
         env.fetches.push({ url: url, opts: opts });
