@@ -251,8 +251,8 @@
     datosGuardados = false;
     if (!API) return abrirVentanaPago();
     ocupado(true, 'Guardando tus datos…');
-    // Máximo 10 s: si Google tarda más, se abre el pago igual
-    var espera = new Promise(function (ok) { setTimeout(ok, 10000); });
+    // Máximo 20 s (el script de Google puede tardar al despertar): si tarda más, se abre el pago igual
+    var espera = new Promise(function (ok) { setTimeout(ok, 20000); });
     Promise.race([api('POST', { accion: 'preinscripcion', tarifa: tarifa.id, datos: datos, codigo: codigo }), espera])
       .then(function (res) { datosGuardados = !!(res && res.ok); })
       .catch(function () {})
