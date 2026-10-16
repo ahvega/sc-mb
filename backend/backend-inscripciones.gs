@@ -28,7 +28,7 @@ const TARIFAS = {
   estudiante: { nombre: 'Estudiante',    usd: 64, hnl: 1700, desde: '2026-01-01', hasta: '2026-12-11', carne: true },
 };
 
-const WHATSAPP_EQUIPO = '+504 [NÚMERO]';
+const WHATSAPP_EQUIPO = '+504 9252-0327';
 
 // Modo de prueba: acepta pagos ficticios (pasarela "prueba") para probar la hoja y el correo.
 // Ponlo en false antes de abrir inscripciones reales.
