@@ -821,8 +821,6 @@ body::before {
 }
 .chat__toggle:hover { background: #fff; }
 .chat__status { width: 8px; height: 8px; border-radius: 50%; background: #2fb26a; }
-.chat__panel a.chat__wa-link { border-color: #1da851; color: #128c48; }
-.chat__panel a.chat__wa-link:hover { background: #25d366; color: #fff; }
 .chat__bar { display: flex; align-items: center; gap: 16px; }
 .wa-btn {
   flex-shrink: 0;
