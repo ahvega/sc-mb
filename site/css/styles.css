@@ -787,6 +787,12 @@ body::before {
   gap: 10px;
 }
 .chat__panel[hidden] { display: none; }
+.chat__panel {
+  /* No pasar del borde superior en pantallas bajas (celular acostado): el panel hace scroll. */
+  max-height: calc(100vh - 230px);
+  max-height: calc(100dvh - 230px);
+  overflow-y: auto;
+}
 .chat__title { font-family: var(--font-mono); font-size: 11px; letter-spacing: .15em; color: #6b5a44; }
 .chat__hello { font-size: 15px; line-height: 1.5; }
 .chat__panel a {
