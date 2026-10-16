@@ -85,6 +85,22 @@
   }
   qa('input[name="tipo"]').forEach(function (r) { r.addEventListener('change', actualizarTipo); });
 
+  // Ciudad: la lista de sugerencias solo muestra lo que coincide con lo escrito. Al entrar al campo
+  // se vacía (la ciudad anterior queda de guía) para volver a ver todas; si no elige otra, se restaura.
+  var ciudad = form.elements.ciudad;
+  var guiaCiudad = ciudad.placeholder;
+  ciudad.addEventListener('focus', function () {
+    if (!ciudad.value) return;
+    ciudad.dataset.anterior = ciudad.value;
+    ciudad.placeholder = ciudad.value;
+    ciudad.value = '';
+  });
+  ciudad.addEventListener('blur', function () {
+    if (!ciudad.value.trim() && ciudad.dataset.anterior) ciudad.value = ciudad.dataset.anterior;
+    delete ciudad.dataset.anterior;
+    ciudad.placeholder = guiaCiudad;
+  });
+
   form.addEventListener('submit', function (e) {
     e.preventDefault();
     if (enviando) return;
@@ -212,7 +228,7 @@
 
   function mostrarPago(t) {
     tarifa = t;
-    if (conBotones) return abrirVentanaPago();
+    if (conBotones) return preinscribir();
     pintarResumen(q('[data-summary]'));
     q('[data-back]').hidden = !!codigo;
     ver('pago');
@@ -244,11 +260,29 @@
   var ventana = q('[data-pp-modal]');
   var nVentana = 0;
 
+  // Con backend, guarda los datos en la hoja (pago PENDIENTE) antes de abrir la ventana.
+  // Si falla, la ventana se abre igual: el botón de WhatsApp lleva los datos.
+  var datosGuardados = false;
+  function preinscribir() {
+    datosGuardados = false;
+    if (!API) return abrirVentanaPago();
+    ocupado(true, 'Guardando tus datos…');
+    // Máximo 20 s (el script de Google puede tardar al despertar): si tarda más, se abre el pago igual
+    var espera = new Promise(function (ok) { setTimeout(ok, 20000); });
+    Promise.race([api('POST', { accion: 'preinscripcion', tarifa: tarifa.id, datos: datos, codigo: codigo }), espera])
+      .then(function (res) { datosGuardados = !!(res && res.ok); })
+      .catch(function () {})
+      .then(function () { ocupado(false); abrirVentanaPago(); });
+  }
+
   function abrirVentanaPago() {
     var id = BOTONES[tarifa.id];
     if (!id) return error('No encontramos el botón de pago para la tarifa ' + tarifa.nombre + '. Escríbenos a info@themediabuilders.com.');
     pintarResumen(ventana.querySelector('[data-pp-resumen]'));
-    // El botón guardado no recibe los datos: que el participante nos los envíe ya escritos
+    // Si los datos ya están en la hoja, no hace falta mandarlos por WhatsApp
+    ventana.querySelector('[data-pp-paso]').hidden = datosGuardados;
+    ventana.querySelector('[data-pp-wa]').hidden = datosGuardados;
+    // El botón guardado no recibe los datos: si no se guardaron, que el participante nos los envíe ya escritos
     ventana.querySelector('[data-pp-wa]').href = 'https://wa.me/50492520327?text=' + encodeURIComponent([
       'Hola, ya pagué mi inscripción a STORYCRAFTERS (' + tarifa.nombre + ', ' + dolares(tarifa.usd) + '). Mis datos:',
       'Nombre: ' + datos.nombre,

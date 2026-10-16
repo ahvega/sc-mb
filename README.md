@@ -190,7 +190,7 @@ Botones "← Datos" y "Confirmar inscripción" / "Enviar comprobante".
 Todas las fotos son propiedad de Media Builders. Ya comprimidas (~0.2–0.4 MB, 2400px máx.).
 
 ## Pendientes de contenido
-Logo STORYCRAFTERS · horarios intermedios de agenda · instalar el backend de inscripciones y las claves de PayPal (`backend/LEEME.md`) · WhatsApp · Instagram / Facebook · políticas de transferencia de cupo y reembolsos · mapa embebido o foto de la sede.
+Logo STORYCRAFTERS · horarios intermedios de agenda · instalar el backend de inscripciones y las claves de PayPal (`backend/LEEME.md`) · políticas de transferencia de cupo y reembolsos.
 
 ## Files
 - `site/` — sitio publicado.

@@ -22,6 +22,18 @@ No hay transferencias bancarias: cada persona hace **un solo pago** en línea.
 
 Sin un carné aprobado no se puede pagar la tarifa de estudiante: el script lo rechaza aunque alguien intente saltarse la página.
 
+## Pago con los botones guardados de PayPal (lo que usa la página hoy)
+
+La página cobra con los 3 botones guardados de PayPal (`docs/paypal-botones.md`). Así no necesitas la app de PayPal del paso 1 ni el paso 2.5: basta con instalar el script (pasos 2.1 a 2.4 y 2.7; el 2.6 si quieres revisión de carnés) y pegar la URL `/exec` en `data-apps-script-url` (paso 3).
+
+1. La persona llena el formulario. Antes de abrir la ventana de pago, sus datos se guardan en la pestaña **Inscritos** con **Referencia de pago** = `PENDIENTE`.
+2. Paga en la ventana con el botón de su tarifa. PayPal les manda el recibo a ella y a ti, pero **no le avisa a la hoja**.
+3. Cuando veas el pago en PayPal, busca a esa persona en **Inscritos** (por nombre o correo) y cambia `PENDIENTE` por el **número de transacción** de PayPal. En ese momento le llega sola su **correo de bienvenida** personalizado y **Correo enviado** pasa a `Sí`.
+
+Correos automáticos: al guardar sus datos, la persona recibe "Recibimos tus datos" con su tarifa y monto (uno por correo mientras siga pendiente; **Correo enviado** = `Datos recibidos`), y al verificar el pago, la bienvenida.
+
+Las filas `PENDIENTE` no ocupan cupo ni salen en **Gafetes**; en **Control**, la fila **Pagos por verificar en PayPal** dice cuántas hay. Si alguien lo intenta dos veces, verás dos filas pendientes con su correo: deja la que coincida con el pago y borra la otra.
+
 ## Instalación (una sola vez)
 
 ### 1. PayPal: crear la app y obtener las claves
