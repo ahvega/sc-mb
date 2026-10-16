@@ -15,10 +15,16 @@
   var API = root.dataset.appsScriptUrl;
   var PAYPAL_ID = root.dataset.paypalClientId;
   var local = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
-  var demo = !API && local;
+  // Botones guardados en PayPal: { idTarifa: Id. hospedado }. Con ellos el pago se abre en una ventana.
+  var BOTONES = null;
+  try { BOTONES = JSON.parse(root.dataset.paypalBotones || 'null'); } catch (e) { BOTONES = null; }
+  var BOTONES_CLIENT = root.dataset.paypalBotonesClient;
+  var conBotones = !!(BOTONES && BOTONES_CLIENT);
+  var demo = !API && local && !conBotones;
 
-  // Solo para el modo demo (localhost sin backend); en producción las tarifas vienen del backend.
-  var TARIFAS_DEMO = [
+  // Sin backend (modo demo o solo con botones de PayPal) la tarifa vigente sale de estas fechas.
+  // Con backend, las tarifas vienen de Apps Script. Mantener igual a los data-end de .tier en index.html.
+  var TARIFAS = [
     { id: 'preventa', nombre: 'Preventa', usd: 64, hasta: '2026-11-05' },
     { id: 'regular', nombre: 'Regular', usd: 72, hasta: '2026-11-25' },
     { id: 'finales', nombre: 'Cupos finales', usd: 82, hasta: '2026-12-11' },
@@ -98,7 +104,10 @@
       .forEach(function (k) { datos[k] = form.elements[k].value.trim(); });
     datos.comunicaciones = form.elements.comunicaciones.checked;
 
-    if (esEstudiante()) return enviarCarne();
+    if (esEstudiante()) {
+      if (!API && !demo) return error('La inscripción de estudiantes abre muy pronto. Escríbenos a info@themediabuilders.com.');
+      return enviarCarne();
+    }
     cargarTarifaVigente();
   });
 
@@ -181,9 +190,9 @@
   }
 
   function cargarTarifaVigente() {
-    if (demo) {
+    if (!API) {
       var h = hoyHN();
-      var t = TARIFAS_DEMO.filter(function (x) { return h <= x.hasta; })[0];
+      var t = TARIFAS.filter(function (x) { return h <= x.hasta; })[0];
       if (!t) return aviso('Las inscripciones están cerradas.');
       return mostrarPago(t);
     }
@@ -203,7 +212,16 @@
 
   function mostrarPago(t) {
     tarifa = t;
-    var resumen = q('[data-summary]');
+    if (conBotones) return abrirVentanaPago();
+    pintarResumen(q('[data-summary]'));
+    q('[data-back]').hidden = !!codigo;
+    ver('pago');
+    root.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    pintarBotonPago();
+  }
+
+  function pintarResumen(resumen) {
+    var t = tarifa;
     resumen.textContent = '';
     [['NOMBRE', datos.nombre], ['TARIFA', t.nombre], ['TOTAL', dolares(t.usd)]].forEach(function (fila, i) {
       var dt = document.createElement('dt'), dd = document.createElement('dd');
@@ -219,11 +237,59 @@
       resumen.appendChild(dt);
       resumen.appendChild(dd);
     });
-    q('[data-back]').hidden = !!codigo;
-    ver('pago');
-    root.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    pintarBotonPago();
   }
+
+  // ---------- 02 · Pago con botón guardado en PayPal (ventana) ----------
+  // El botón cobra el precio fijo guardado en PayPal; PayPal envía el recibo al participante y a la cuenta.
+  var ventana = q('[data-pp-modal]');
+  var nVentana = 0;
+
+  function abrirVentanaPago() {
+    var id = BOTONES[tarifa.id];
+    if (!id) return error('No encontramos el botón de pago para la tarifa ' + tarifa.nombre + '. Escríbenos a info@themediabuilders.com.');
+    pintarResumen(ventana.querySelector('[data-pp-resumen]'));
+    // El botón guardado no recibe los datos: que el participante nos los envíe ya escritos
+    ventana.querySelector('[data-pp-wa]').href = 'https://wa.me/50492520327?text=' + encodeURIComponent([
+      'Hola, ya pagué mi inscripción a STORYCRAFTERS (' + tarifa.nombre + ', ' + dolares(tarifa.usd) + '). Mis datos:',
+      'Nombre: ' + datos.nombre,
+      'Correo: ' + datos.correo,
+      'WhatsApp: ' + datos.whatsapp,
+      'Ciudad: ' + datos.ciudad,
+      'Ocupación: ' + datos.ocupacion,
+      'Experiencia: ' + datos.experiencia,
+      'Talla de camiseta: ' + datos.talla,
+      'Restricciones alimentarias: ' + (datos.restricciones || 'ninguna'),
+      'Cómo se enteró: ' + (datos.comoSeEntero || '-'),
+      'Acepta comunicaciones: ' + (datos.comunicaciones ? 'sí' : 'no')
+    ].join('\n'));
+    var cont = ventana.querySelector('[data-pp-boton]');
+    var aviso = ventana.querySelector('.insc__error');
+    aviso.textContent = '';
+    cont.innerHTML = '';
+    var esta = ++nVentana;
+    cont.id = 'paypal-container-' + id + '-' + esta;
+    if (ventana.showModal) ventana.showModal(); else ventana.setAttribute('open', '');
+    cargarSdk('https://www.paypal.com/sdk/js?client-id=' + encodeURIComponent(BOTONES_CLIENT) +
+      '&components=hosted-buttons&disable-funding=venmo&currency=USD')
+      .then(function (paypal) {
+        // Si la ventana se cerró y se volvió a abrir mientras cargaba PayPal, solo pinta la última
+        if (esta !== nVentana) return;
+        return paypal.HostedButtons({ hostedButtonId: id }).render('#' + cont.id);
+      })
+      .catch(function () { if (esta === nVentana) aviso.textContent = 'No pudimos cargar PayPal. Recarga la página e intenta de nuevo.'; });
+  }
+
+  function cerrarVentana() {
+    if (ventana.close) ventana.close(); else ventana.removeAttribute('open');
+  }
+  ventana.querySelector('[data-pp-cerrar]').addEventListener('click', cerrarVentana);
+  // Clic en el fondo oscuro también cierra
+  // (solo fuera del recuadro: un clic en el relleno de la ventana también tiene e.target === ventana)
+  ventana.addEventListener('click', function (e) {
+    if (e.target !== ventana) return;
+    var r = ventana.getBoundingClientRect();
+    if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) cerrarVentana();
+  });
 
   function pintarBotonPago() {
     var cont = q('[data-paypal]');
@@ -258,14 +324,18 @@
     }).catch(function () { error('No pudimos cargar PayPal. Recarga la página e intenta de nuevo.'); });
   }
 
-  var paypalCargado = null;
   function cargarPayPal() {
+    return cargarSdk('https://www.paypal.com/sdk/js?client-id=' + encodeURIComponent(PAYPAL_ID) +
+      '&currency=USD&intent=capture&components=buttons&locale=es_XC');
+  }
+
+  var paypalCargado = null;
+  function cargarSdk(src) {
     if (window.paypal) return Promise.resolve(window.paypal);
     if (paypalCargado) return paypalCargado;
     paypalCargado = new Promise(function (ok, mal) {
       var s = document.createElement('script');
-      s.src = 'https://www.paypal.com/sdk/js?client-id=' + encodeURIComponent(PAYPAL_ID) +
-        '&currency=USD&intent=capture&components=buttons&locale=es_XC';
+      s.src = src;
       s.onload = function () { ok(window.paypal); };
       s.onerror = function () { paypalCargado = null; mal(); };
       document.head.appendChild(s);
@@ -320,7 +390,7 @@
   // Enlace de estudiante aprobado: ?estudiante=CÓDIGO
   codigo = new URLSearchParams(location.search).get('estudiante');
 
-  if (!API && !demo) {
+  if (!API && !demo && !conBotones) {
     aviso(q('[data-aviso-texto]').innerHTML);
   } else if (codigo) {
     if (demo) {

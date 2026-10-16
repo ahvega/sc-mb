@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@200;300;400;500&family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=11">
+  <link rel="stylesheet" href="css/styles.css?v=13">
 </head>
 <body>
 
@@ -340,8 +340,13 @@
     <!-- INSCRIPCIÓN EN 3 PASOS (js/inscripcion.js).
          data-apps-script-url: URL de la aplicación web de Apps Script (termina en /exec); ver backend/LEEME.md.
          data-paypal-client-id: Client ID de la app de PayPal (es público; el Secret va solo en Apps Script).
-         Sin URL: en localhost funciona en modo demo; publicado muestra "la inscripción abre pronto". -->
-    <div class="panel insc" id="insc" data-apps-script-url="" data-paypal-client-id="">
+         Sin URL: en localhost funciona en modo demo; publicado muestra "la inscripción abre pronto".
+         data-paypal-botones: botones de pago guardados en PayPal (Enlaces y botones de pago), uno por tarifa:
+         id de la tarifa → Id. hospedado. Con ellos, al llenar los datos se abre una ventana con el botón del precio vigente.
+         data-paypal-botones-client: el client-id que PayPal da en el código de esos botones (es público). -->
+    <div class="panel insc" id="insc" data-apps-script-url="" data-paypal-client-id=""
+         data-paypal-botones='{"preventa":"EVQLQJYJFXG22","estudiante":"EVQLQJYJFXG22","regular":"HX6U8RXCBEBV2","finales":"LRTKVH5K9NE84"}'
+         data-paypal-botones-client="BAAjkswxk5Fus5kV-9Y8r64e3fcTZwnvJ5fRdQgqwnCLjkBRUvVHy6d_wEIhztGducb7d808wvju7YmXb0">
       <ol class="insc__steps" aria-hidden="true">
         <li data-step="1" class="is-active">01 Datos</li>
         <li data-step="2">02 Pago</li>
@@ -358,7 +363,7 @@
         <div class="insc__grid">
           <div class="field field--full"><label for="f-nombre">Nombre completo * <small>como saldrá en tu diploma</small></label><input id="f-nombre" name="nombre" autocomplete="name" required maxlength="80"></div>
           <div class="field"><label for="f-correo">Correo *</label><input id="f-correo" name="correo" type="email" autocomplete="email" required></div>
-          <div class="field"><label for="f-whatsapp">WhatsApp *</label><input id="f-whatsapp" name="whatsapp" type="tel" autocomplete="tel" placeholder="+504" required pattern="^\+?[0-9 ()\-]{8,20}$"></div>
+          <div class="field"><label for="f-whatsapp">WhatsApp *</label><input id="f-whatsapp" name="whatsapp" type="tel" autocomplete="tel" placeholder="+504" required pattern="^\+?[0-9 \(\)\-]{8,20}$"></div>
           <div class="field"><label for="f-ciudad">Ciudad *</label><input id="f-ciudad" name="ciudad" autocomplete="address-level2" required></div>
           <div class="field"><label for="f-ocupacion">Ocupación *</label>
             <select id="f-ocupacion" name="ocupacion" required>
@@ -439,6 +444,18 @@
           <button type="button" class="btn btn--primary insc__submit" data-a-general>Inscribirme con la tarifa vigente →</button>
         </div>
       </div>
+
+      <!-- Ventana de pago con el botón guardado en PayPal (data-paypal-botones) -->
+      <dialog class="pp-modal" data-pp-modal aria-labelledby="pp-modal-titulo">
+        <button class="pp-modal__close" type="button" data-pp-cerrar aria-label="Cerrar">×</button>
+        <h3 id="pp-modal-titulo">Paga tu <span class="hl">inscripción</span></h3>
+        <dl class="pay" data-pp-resumen></dl>
+        <div class="insc__paypal" data-pp-boton></div>
+        <p class="panel__small">Pago único y seguro con tarjeta de crédito o débito, o con tu cuenta PayPal. Al terminar, PayPal te envía el recibo por correo.</p>
+        <p class="pp-modal__paso"><b>Último paso:</b> después de pagar, envíanos tus datos por WhatsApp para confirmar tu lugar.</p>
+        <a class="btn btn--primary pp-modal__wa" data-pp-wa href="https://wa.me/50492520327" target="_blank" rel="noopener">Enviar mis datos por WhatsApp →</a>
+        <p class="insc__error" role="alert"></p>
+      </dialog>
 
       <!-- Sin backend configurado, cupos llenos o enlace inválido -->
       <div class="insc__view" data-view="aviso" hidden>
@@ -528,6 +545,6 @@
 </div>
 
 <script src="js/script.js?v=2"></script>
-<script src="js/inscripcion.js?v=4"></script>
+<script src="js/inscripcion.js?v=6"></script>
 </body>
 </html>
