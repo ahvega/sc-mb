@@ -491,15 +491,6 @@ body::before {
 .venue__code { font-family: var(--font-mono); font-size: 13px; color: var(--tan); }
 .venue .btn { align-self: flex-start; font-size: 15px; padding: 14px 22px; }
 .venue__nav { display: flex; flex-wrap: wrap; gap: 12px; }
-.venue__map {
-  position: relative;
-  aspect-ratio: 4 / 3;
-  background: var(--bg-alt);
-  border: 1px solid #2a2a2a;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
 
 /* ---------- Inversión + inscripción ---------- */
 .signup { background: var(--accent); color: var(--bg); }
