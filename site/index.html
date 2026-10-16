@@ -364,7 +364,8 @@
           <div class="field field--full"><label for="f-nombre">Nombre completo * <small>como saldrá en tu diploma</small></label><input id="f-nombre" name="nombre" autocomplete="name" required maxlength="80"></div>
           <div class="field"><label for="f-correo">Correo *</label><input id="f-correo" name="correo" type="email" autocomplete="email" required></div>
           <div class="field"><label for="f-whatsapp">WhatsApp *</label><input id="f-whatsapp" name="whatsapp" type="tel" autocomplete="tel" placeholder="+504" required pattern="^\+?[0-9 \(\)\-]{8,20}$"></div>
-          <div class="field"><label for="f-ciudad">Ciudad *</label><input id="f-ciudad" name="ciudad" autocomplete="address-level2" required></div>
+          <div class="field"><label for="f-ciudad">Ciudad *</label><input id="f-ciudad" name="ciudad" list="ciudades-hn" autocomplete="off" placeholder="Escribe o elige tu ciudad" required>
+            <datalist id="ciudades-hn"><option value="Catacamas"><option value="Choloma"><option value="Choluteca"><option value="Comayagua"><option value="Copán Ruinas"><option value="Danlí"><option value="El Progreso"><option value="Gracias"><option value="Juticalpa"><option value="La Ceiba"><option value="La Esperanza"><option value="La Lima"><option value="La Paz"><option value="Nacaome"><option value="Ocotepeque"><option value="Olanchito"><option value="Omoa"><option value="Potrerillos"><option value="Puerto Cortés"><option value="Puerto Lempira"><option value="Quimistán"><option value="Roatán"><option value="San Lorenzo"><option value="San Pedro Sula"><option value="Santa Bárbara"><option value="Santa Rita"><option value="Santa Rosa de Copán"><option value="Siguatepeque"><option value="Talanga"><option value="Tegucigalpa"><option value="Tela"><option value="Tocoa"><option value="Trujillo"><option value="Villanueva"><option value="Yoro"></datalist></div>
           <div class="field"><label for="f-ocupacion">Ocupación *</label>
             <select id="f-ocupacion" name="ocupacion" required>
               <option value="">Selecciona…</option>
@@ -513,7 +514,7 @@
       </div>
       <div class="footer__col">
         <span class="footer__col-title">REDES</span>
-        <span><span class="pending">[INSTAGRAM]</span> · <span class="pending">[FACEBOOK]</span></span>
+        <span><a href="https://www.instagram.com/storycraftershn/" target="_blank" rel="noopener">Instagram @storycraftershn</a></span>
       </div>
     </div>
   </div>
@@ -545,6 +546,6 @@
 </div>
 
 <script src="js/script.js?v=2"></script>
-<script src="js/inscripcion.js?v=8"></script>
+<script src="js/inscripcion.js?v=9"></script>
 </body>
 </html>
