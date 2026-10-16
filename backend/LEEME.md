@@ -30,7 +30,7 @@ La página cobra con los 3 botones guardados de PayPal (`docs/paypal-botones.md`
 2. Paga en la ventana con el botón de su tarifa. PayPal les manda el recibo a ella y a ti, pero **no le avisa a la hoja**.
 3. Cuando veas el pago en PayPal, busca a esa persona en **Inscritos** (por nombre o correo) y cambia `PENDIENTE` por el **número de transacción** de PayPal.
 
-Las filas `PENDIENTE` no ocupan cupo ni salen en **Gafetes**; en **Control**, la fila **Pagos por verificar en PayPal** dice cuántas hay. Si alguien lo intenta dos veces con el mismo correo, se actualiza su fila pendiente en vez de duplicarla.
+Las filas `PENDIENTE` no ocupan cupo ni salen en **Gafetes**; en **Control**, la fila **Pagos por verificar en PayPal** dice cuántas hay. Si alguien lo intenta dos veces, verás dos filas pendientes con su correo: deja la que coincida con el pago y borra la otra.
 
 ## Instalación (una sola vez)
 

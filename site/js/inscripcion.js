@@ -249,7 +249,9 @@
   function preinscribir() {
     if (!API) return abrirVentanaPago();
     ocupado(true, 'Guardando tus datos…');
-    api('POST', { accion: 'preinscripcion', tarifa: tarifa.id, datos: datos, codigo: codigo })
+    // Máximo 10 s: si Google tarda más, se abre el pago igual
+    var espera = new Promise(function (ok) { setTimeout(ok, 10000); });
+    Promise.race([api('POST', { accion: 'preinscripcion', tarifa: tarifa.id, datos: datos, codigo: codigo }), espera])
       .catch(function () {})
       .then(function () { ocupado(false); abrirVentanaPago(); });
   }

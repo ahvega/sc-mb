@@ -362,11 +362,9 @@ function preinscripcion(body) {
     registro['Carné verificado'] = !!solicitud;
     registro['Notas'] = 'Datos recibidos; verificar el pago en PayPal y escribir aquí el número de transacción en "Referencia de pago".';
 
-    // Si la misma persona vuelve a intentarlo, actualizar su fila pendiente en vez de duplicarla
-    const fila = buscarPendiente(hoja, String(datos.correo || '').trim().toLowerCase());
-    const valores = [COLUMNAS.map(function (c) { return registro[c] === undefined ? '' : registro[c]; })];
-    if (fila) hoja.getRange(fila, 1, 1, COLUMNAS.length).setValues(valores);
-    else hoja.appendRow(valores[0]);
+    // Siempre una fila nueva: la página es pública, así que nadie puede sobrescribir la fila de otra
+    // persona con solo saber su correo. Si alguien lo intenta dos veces, el equipo borra la repetida.
+    hoja.appendRow(COLUMNAS.map(function (c) { return registro[c] === undefined ? '' : registro[c]; }));
     SpreadsheetApp.flush();
   } catch (err) {
     console.error(err);
@@ -375,17 +373,6 @@ function preinscripcion(body) {
     lock.releaseLock();
   }
   return json({ ok: true });
-}
-
-function buscarPendiente(hoja, correo) {
-  const n = hoja.getLastRow() - 1;
-  if (n < 1 || !correo) return 0;
-  const filas = hoja.getRange(2, 1, n, COLUMNAS.length).getValues();
-  for (let i = filas.length - 1; i >= 0; i--) {
-    if (String(filas[i][COL['Correo'] - 1]).trim().toLowerCase() === correo &&
-        String(filas[i][COL['Referencia de pago'] - 1]) === PAGO_PENDIENTE) return i + 2;
-  }
-  return 0;
 }
 
 // ---------- Tarifa de estudiante ----------
