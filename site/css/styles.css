@@ -541,9 +541,10 @@ body::before {
 .tier__price { font-family: var(--font-display); font-weight: 500; font-size: var(--step-9); line-height: 1; }
 .tier__when { font-family: var(--font-mono); font-size: var(--step--2); letter-spacing: .06em; opacity: .8; }
 .tier__tag { font-family: var(--font-mono); font-size: var(--step--2); letter-spacing: .15em; font-weight: 500; }
-/* El script marca la tarifa vigente y las cerradas según la fecha (data-end) */
+/* El script marca la tarifa vigente y las cerradas según la fecha (data-end);
+   las cerradas desaparecen de la lista (p. ej. Preventa desde el 6 de nov). */
 .tier.is-current { background: var(--bg); color: var(--accent); }
-.tier.is-closed { color: rgba(10, 10, 10, .45); }
+.tier.is-closed { display: none; }
 
 .notice { display: flex; gap: 10px; align-items: center; font-weight: 700; font-size: var(--step-3); }
 .notice[hidden] { display: none; }
