@@ -5,10 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>STORYCRAFTERS · Masterclass de storytelling documental | Media Builders</title>
   <meta name="description" content="Masterclass intensiva de storytelling documental. Sábado 12 de diciembre de 2026, San Pedro Sula, Honduras. Un programa de Media Builders.">
+  <!-- Favicons (paquete en site/assets/favicon/) -->
+  <link rel="icon" href="assets/favicon/favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon/favicon-16x16.png">
+  <link rel="apple-touch-icon" href="assets/favicon/apple-touch-icon.png">
+  <link rel="manifest" href="assets/favicon/site.webmanifest">
+  <meta name="theme-color" content="#0a0a0a">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@200;300;400;500&family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=14">
+  <link rel="stylesheet" href="css/styles.css?v=16">
 </head>
 <body>
 
@@ -519,22 +526,33 @@
   <div class="footer__legal">© 2026 Media Builders, S. de R.L. de C.V.</div>
 </footer>
 
-<!-- CHAT DE PREGUNTAS RÁPIDAS -->
-<div class="chat">
-  <div class="chat__panel" id="chat-panel" hidden>
-    <div class="chat__title">ASISTENTE STORYCRAFTERS</div>
-    <p class="chat__hello">Hola. ¿Sobre qué tienes dudas?</p>
-    <a href="#preguntas" data-faq="0">¿Necesito llevar cámara?</a>
-    <a href="#preguntas" data-faq="1">¿Necesito experiencia previa?</a>
-    <a href="#preguntas" data-faq="2">¿Las charlas son presenciales?</a>
-    <a href="#preguntas" data-faq="3">¿Está incluida la comida?</a>
+<!-- CHAT DE WHATSAPP (estilo WP WhatsApp Chatbox: burbuja → caja → wa.me con el mensaje).
+     data-wa-number: número destino sin "+", con código de país. -->
+<div class="chat" data-wa-number="50492520327">
+  <div class="chat__popup" id="chatbox-popup" role="dialog" aria-labelledby="chatbox-title" aria-hidden="true">
+    <div class="chat__header">
+      <span class="chat__avatar"><img src="assets/avatar-storycrafters.webp" alt="Media Builders" width="128" height="128"></span>
+      <div>
+        <h3 class="chat__title" id="chatbox-title">Media Builders</h3>
+        <p class="chat__status">En línea</p>
+      </div>
+      <button type="button" class="chat__close" aria-label="Cerrar chat"><span aria-hidden="true">×</span></button>
+    </div>
+    <div class="chat__messages">
+      <div class="chat__bubble"><p>¡Hola! ¿En qué podemos ayudarte con STORYCRAFTERS?</p></div>
+      <div class="chat__quick">
+        <a href="#preguntas" data-faq="0">¿Necesito llevar cámara?</a>
+        <a href="#preguntas" data-faq="1">¿Necesito experiencia previa?</a>
+        <a href="#preguntas" data-faq="2">¿Las charlas son presenciales?</a>
+        <a href="#preguntas" data-faq="3">¿Está incluida la comida?</a>
+      </div>
+    </div>
+    <form class="chat__form">
+      <input type="text" class="chat__input" placeholder="Escribe un mensaje…" aria-label="Escribe un mensaje" autocomplete="off">
+      <button type="submit" class="chat__send" aria-label="Iniciar conversación en WhatsApp"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M1.101 21.757L23.8 12.028 1.101 2.3l.011 7.912 13.623 1.816-13.623 1.817-.011 7.912z"/></svg></button>
+    </form>
   </div>
-  <div class="chat__bar">
-    <a href="https://wa.me/50492520327?text=Hola%2C%20tengo%20una%20pregunta%20sobre%20STORYCRAFTERS" target="_blank" rel="noopener" class="wa-btn" aria-label="Escríbenos por WhatsApp al +504 9252-0327" title="Escríbenos por WhatsApp"><svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true" focusable="false"><path fill="currentColor" d="M16.04 3C8.86 3 3.03 8.82 3.03 16c0 2.3.6 4.54 1.75 6.52L3 29l6.65-1.74A13 13 0 0 0 16.04 29C23.2 29 29.03 23.18 29.03 16S23.2 3 16.04 3Zm0 23.8c-1.98 0-3.92-.53-5.61-1.53l-.4-.24-3.95 1.03 1.05-3.85-.26-.4A10.77 10.77 0 0 1 5.25 16c0-5.95 4.84-10.79 10.8-10.79 5.94 0 10.78 4.84 10.78 10.79 0 5.95-4.84 10.8-10.79 10.8Zm5.92-8.08c-.32-.16-1.92-.95-2.22-1.06-.3-.11-.51-.16-.73.16-.22.32-.84 1.06-1.03 1.27-.19.22-.38.24-.7.08-.32-.16-1.37-.5-2.6-1.6-.96-.86-1.61-1.92-1.8-2.24-.19-.32-.02-.5.14-.66.15-.14.32-.38.49-.57.16-.19.21-.32.32-.54.11-.22.05-.4-.03-.57-.08-.16-.73-1.75-1-2.4-.26-.63-.53-.54-.73-.55h-.62c-.22 0-.57.08-.86.4-.3.32-1.13 1.1-1.13 2.69 0 1.58 1.16 3.12 1.32 3.33.16.22 2.28 3.48 5.52 4.88.77.33 1.37.53 1.84.68.77.25 1.48.21 2.03.13.62-.09 1.92-.78 2.19-1.54.27-.76.27-1.4.19-1.54-.08-.13-.3-.21-.62-.38Z"/></svg></a>
-    <button type="button" class="chat__toggle" id="chat-toggle" aria-expanded="false" aria-controls="chat-panel">
-      <span class="chat__status"></span><span data-chat-label>¿Tienes preguntas?</span>
-    </button>
-  </div>
+  <button type="button" class="chat__fab" aria-expanded="false" aria-controls="chatbox-popup" aria-label="Abrir chat de WhatsApp"><svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true" focusable="false"><path fill="currentColor" d="M16.04 3C8.86 3 3.03 8.82 3.03 16c0 2.3.6 4.54 1.75 6.52L3 29l6.65-1.74A13 13 0 0 0 16.04 29C23.2 29 29.03 23.18 29.03 16S23.2 3 16.04 3Zm0 23.8c-1.98 0-3.92-.53-5.61-1.53l-.4-.24-3.95 1.03 1.05-3.85-.26-.4A10.77 10.77 0 0 1 5.25 16c0-5.95 4.84-10.79 10.8-10.79 5.94 0 10.78 4.84 10.78 10.79 0 5.95-4.84 10.8-10.79 10.8Zm5.92-8.08c-.32-.16-1.92-.95-2.22-1.06-.3-.11-.51-.16-.73.16-.22.32-.84 1.06-1.03 1.27-.19.22-.38.24-.7.08-.32-.16-1.37-.5-2.6-1.6-.96-.86-1.61-1.92-1.8-2.24-.19-.32-.02-.5.14-.66.15-.14.32-.38.49-.57.16-.19.21-.32.32-.54.11-.22.05-.4-.03-.57-.08-.16-.73-1.75-1-2.4-.26-.63-.53-.54-.73-.55h-.62c-.22 0-.57.08-.86.4-.3.32-1.13 1.1-1.13 2.69 0 1.58 1.16 3.12 1.32 3.33.16.22 2.28 3.48 5.52 4.88.77.33 1.37.53 1.84.68.77.25 1.48.21 2.03.13.62-.09 1.92-.78 2.19-1.54.27-.76.27-1.4.19-1.54-.08-.13-.3-.21-.62-.38Z"/></svg></button>
 </div>
 
 <!-- BARRA FIJA PARA MÓVIL -->
@@ -543,7 +561,7 @@
   <a href="#inscripcion" class="btn btn--primary">Inscribirme</a>
 </div>
 
-<script src="js/script.js?v=2"></script>
+<script src="js/script.js?v=4"></script>
 <script src="js/inscripcion.js?v=9"></script>
 </body>
 </html>

@@ -24,7 +24,7 @@ Options -Indexes
   <FilesMatch "\.(html|css|js)$">
     Header set Cache-Control "no-cache"
   </FilesMatch>
-  <FilesMatch "\.(jpg|jpeg|png|webp|avif|svg|woff2)$">
+  <FilesMatch "\.(jpg|jpeg|png|webp|avif|svg|woff2|ico|webmanifest)$">
     Header set Cache-Control "public, max-age=604800"
   </FilesMatch>
   Header always set X-Content-Type-Options "nosniff"

@@ -55,25 +55,74 @@
     bar.style.width = (n / 40) * 100 + '%';
   }
 
-  // ---- Chat de preguntas rápidas -----------------------------------------
-  var chatPanel = document.getElementById('chat-panel');
-  var chatToggle = document.getElementById('chat-toggle');
+  // ---- Chat de WhatsApp (.chat[data-wa-number]) ---------------------------
+  // Estilo WP WhatsApp Chatbox: al enviar, el mensaje se abre en
+  // wa.me/<número>?text=…; se auto-muestra una vez por sesión al llegar al footer.
+  var chat = document.querySelector('.chat[data-wa-number]');
 
-  function setChat(open) {
-    chatPanel.hidden = !open;
-    chatToggle.setAttribute('aria-expanded', String(open));
-    chatToggle.querySelector('[data-chat-label]').textContent = open ? 'Cerrar' : '¿Tienes preguntas?';
-  }
+  if (chat) {
+    var popup = chat.querySelector('.chat__popup');
+    var fab = chat.querySelector('.chat__fab');
+    var closeBtn = chat.querySelector('.chat__close');
+    var form = chat.querySelector('.chat__form');
+    var input = chat.querySelector('.chat__input');
+    var chatOpen = false;
 
-  if (chatPanel && chatToggle) {
-    chatToggle.addEventListener('click', function () { setChat(chatPanel.hidden); });
-    chatPanel.addEventListener('click', function (e) {
+    function setChat(open) {
+      chatOpen = open;
+      popup.setAttribute('aria-hidden', String(!open));
+      fab.setAttribute('aria-expanded', String(open));
+      // En táctiles no se enfoca el input: evitaría que el teclado tape la caja.
+      if (open && window.matchMedia('(pointer: fine)').matches) {
+        setTimeout(function () { input.focus(); }, 300);
+      }
+    }
+
+    fab.addEventListener('click', function () { setChat(!chatOpen); });
+    closeBtn.addEventListener('click', function () { setChat(false); fab.focus(); });
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var msg = input.value.trim();
+      if (!msg) return;
+      window.open('https://wa.me/' + chat.dataset.waNumber + '?text=' + encodeURIComponent(msg), '_blank');
+      input.value = '';
+      setChat(false);
+    });
+
+    // Enlaces rápidos: abren la pregunta en la sección de FAQ y cierran la caja.
+    popup.addEventListener('click', function (e) {
       var link = e.target.closest('a[data-faq]');
       if (!link) return;
       var item = document.querySelectorAll('.faq details')[Number(link.dataset.faq)];
       if (item) item.open = true;
       setChat(false);
     });
+
+    // Clic fuera y Escape cierran la caja.
+    document.addEventListener('click', function (e) {
+      if (chatOpen && !e.target.closest('.chat')) setChat(false);
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && chatOpen) setChat(false);
+    });
+
+    // Auto-abrir una vez por sesión cuando el footer entra en pantalla.
+    var footer = document.querySelector('.footer');
+    var SHOWN = 'wa_chatbox_shown';
+    if (footer && 'IntersectionObserver' in window) {
+      try {
+        if (!sessionStorage.getItem(SHOWN)) {
+          var io = new IntersectionObserver(function (entries) {
+            if (!entries[0].isIntersecting) return;
+            sessionStorage.setItem(SHOWN, '1');
+            setChat(true);
+            io.disconnect();
+          });
+          io.observe(footer);
+        }
+      } catch (err) { /* sessionStorage bloqueado: no se auto-muestra */ }
+    }
   }
 
   tickCountdown();
