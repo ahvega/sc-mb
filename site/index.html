@@ -344,7 +344,7 @@
          data-paypal-botones: botones de pago guardados en PayPal (Enlaces y botones de pago), uno por tarifa:
          id de la tarifa → Id. hospedado. Con ellos, al llenar los datos se abre una ventana con el botón del precio vigente.
          data-paypal-botones-client: el client-id que PayPal da en el código de esos botones (es público). -->
-    <div class="panel insc" id="insc" data-apps-script-url="" data-paypal-client-id=""
+    <div class="panel insc" id="insc" data-apps-script-url="https://script.google.com/macros/s/AKfycbyV51WjFIldAiRhtydx0Lhaa86ygA51YiEMiQzWbOnhYIa6qetjgR9M8lxkACVnlOsV/exec" data-paypal-client-id=""
          data-paypal-botones='{"preventa":"EVQLQJYJFXG22","estudiante":"EVQLQJYJFXG22","regular":"HX6U8RXCBEBV2","finales":"LRTKVH5K9NE84"}'
          data-paypal-botones-client="BAAjkswxk5Fus5kV-9Y8r64e3fcTZwnvJ5fRdQgqwnCLjkBRUvVHy6d_wEIhztGducb7d808wvju7YmXb0">
       <ol class="insc__steps" aria-hidden="true">
@@ -453,7 +453,7 @@
         <dl class="pay" data-pp-resumen></dl>
         <div class="insc__paypal" data-pp-boton></div>
         <p class="panel__small">Pago único y seguro con tarjeta de crédito o débito, o con tu cuenta PayPal. Al terminar, PayPal te envía el recibo por correo.</p>
-        <p class="pp-modal__paso"><b>Último paso:</b> después de pagar, envíanos tus datos por WhatsApp para confirmar tu lugar.</p>
+        <p class="pp-modal__paso" data-pp-paso><b>Último paso:</b> después de pagar, envíanos tus datos por WhatsApp para confirmar tu lugar.</p>
         <a class="btn btn--primary pp-modal__wa" data-pp-wa href="https://wa.me/50492520327" target="_blank" rel="noopener">Enviar mis datos por WhatsApp →</a>
         <p class="insc__error" role="alert"></p>
       </dialog>
@@ -546,6 +546,6 @@
 </div>
 
 <script src="js/script.js?v=2"></script>
-<script src="js/inscripcion.js?v=7"></script>
+<script src="js/inscripcion.js?v=9"></script>
 </body>
 </html>
