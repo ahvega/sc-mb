@@ -598,5 +598,23 @@
     }
   } else {
     actualizarTipo();
+    // Cupos: el contador sale de los pagos confirmados en la hoja y, si ya no hay, se muestra la
+    // lista de espera desde el inicio (sin hacer llenar el formulario). En local: ?cupos=lleno.
+    if (local && new URLSearchParams(location.search).get('cupos') === 'lleno') {
+      mostrarCupos(0);
+    } else if (API) {
+      api('GET').then(function (res) { if (res && typeof res.cuposDisponibles === 'number') mostrarCupos(res.cuposDisponibles); })
+        .catch(function () {});
+    }
+  }
+
+  function mostrarCupos(n) {
+    var left = document.querySelector('[data-spots-left]');
+    var bar = document.querySelector('[data-spots-bar]');
+    var total = Number(((document.querySelector('.spots__of') || {}).textContent || '').replace(/\D/g, '')) || 40;
+    n = Math.max(0, Math.min(total, n));
+    if (left) left.textContent = n;
+    if (bar) bar.style.width = (n / total) * 100 + '%';
+    if (n <= 0) ver('espera');
   }
 })();

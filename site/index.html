@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@200;300;400;500&family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=17">
+  <link rel="stylesheet" href="css/styles.css?v=18">
 </head>
 <body>
 
@@ -492,14 +492,15 @@
 
       <!-- Cupo lleno: lista de espera para el próximo evento -->
       <form class="insc__view" data-view="espera" hidden>
-        <h3>Cupos <span class="hl">llenos</span> por ahora</h3>
-        <p>STORYCRAFTERS llegó a su capacidad. Déjanos tus datos y te avisamos primero cuando abramos el próximo evento.</p>
+        <h3>¡Cupos <span class="hl">agotados</span>!</h3>
+        <p>Se llenaron los cupos de STORYCRAFTERS del 12 de diciembre. Si te interesa una próxima fecha, déjanos tus datos: si se juntan suficientes personas, abrimos una segunda edición y te avisamos primero.</p>
+        <a class="btn btn--ghost insc__wa" href="https://wa.me/50492520327?text=Hola%2C%20vi%20que%20los%20cupos%20de%20STORYCRAFTERS%20se%20agotaron.%20Quisiera%20informaci%C3%B3n%20sobre%20pr%C3%B3ximas%20fechas." target="_blank" rel="noopener">Pedir información por WhatsApp →</a>
         <div class="insc__grid">
           <div class="field field--full"><label for="e-nombre">Nombre completo *</label><input id="e-nombre" name="nombre" autocomplete="name" required maxlength="80"></div>
           <div class="field"><label for="e-correo">Correo *</label><input id="e-correo" name="correo" type="email" autocomplete="email" required></div>
           <div class="field"><label for="e-whatsapp">WhatsApp *</label><input id="e-whatsapp" name="whatsapp" type="tel" autocomplete="tel" placeholder="+504" required pattern="^\+?[0-9 \(\)\-]{8,20}$"></div>
         </div>
-        <button class="btn btn--primary insc__submit" type="submit">Avísenme del próximo evento →</button>
+        <button class="btn btn--primary insc__submit" type="submit">Anotarme para la próxima fecha →</button>
         <p class="insc__error" role="alert"></p>
       </form>
 
@@ -602,6 +603,6 @@
 </div>
 
 <script src="js/script.js?v=4"></script>
-<script src="js/inscripcion.js?v=10"></script>
+<script src="js/inscripcion.js?v=11"></script>
 </body>
 </html>
