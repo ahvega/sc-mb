@@ -673,6 +673,8 @@ body::before {
 .insc__check.is-invalid { color: var(--rec); }
 .insc__note { font-size: var(--step-2) !important; border-left: 3px solid var(--accent); padding-left: 14px; }
 .insc__submit { width: 100%; border: 0; font: 700 var(--step-4) var(--font-body); padding: 18px; min-height: 56px; }
+.insc__view a.insc__wa { display: flex; justify-content: center; text-align: center; width: 100%; color: var(--text); text-decoration: none; }
+.insc__view a.insc__wa:hover { color: var(--accent); }
 .insc__submit:disabled { opacity: .6; cursor: wait; }
 .insc__error { color: var(--rec); font-size: var(--step-3); line-height: 1.5; }
 .insc__error:empty { display: none; }
