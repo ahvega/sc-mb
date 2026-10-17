@@ -185,7 +185,7 @@ function crearEntorno(opciones) {
       base64Encode: function (bytes) { return Buffer.from(bytes).toString('base64'); },
       getUuid: function () { return crypto.randomUUID(); },
       newBlob: function (bytes, tipo, nombre) { return { bytes: bytes, tipo: tipo, nombre: nombre }; },
-      DigestType: { SHA_256: 'sha256' },
+      DigestAlgorithm: { SHA_256: 'sha256' },
       Charset: { UTF_8: 'utf8' },
       computeDigest: function (alg, valor) { return crypto.createHash('sha256').update(String(valor), 'utf8').digest(); },
     },
