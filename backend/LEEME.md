@@ -48,6 +48,10 @@ Cuando el cupo se llena, la página cambia sola a la **lista de espera** (nombre
 
 ## Instalación (una sola vez)
 
+> **Redeploy desde la versión anterior:** sigue `backend/DESPLIEGUE.md` (paso a paso para el
+> propietario: vincular el script a la hoja, props `OPERADORES`/`BANCO_*`, `instalar`, `migrar`,
+> prueba de humo y rollback).
+
 ### 1. PayPal: crear la app y obtener las claves
 1. Entra a <https://developer.paypal.com> con tu cuenta **PayPal Business**.
 2. Ve a **Apps & Credentials**. Arriba elige **Sandbox** (pruebas) primero.
