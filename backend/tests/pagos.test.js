@@ -53,7 +53,7 @@ test('reintento con la misma clave de idempotencia devuelve el mismo registro si
   assert.equal(r2.repetido, true);
   assert.equal(r2.registrationId, r1.registrationId);
   assert.equal(env.hoja('Inscritos').getLastRow(), 2);
-  assert.equal(env.correos.length, 1); // un solo correo de "datos recibidos"
+  assert.equal(env.correos.length, 0); // preinscribir no envía correo
 });
 
 test('más de 3 preinscripciones del mismo correo el mismo día se rechazan, con o sin clave', () => {

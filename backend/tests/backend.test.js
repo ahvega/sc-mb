@@ -20,7 +20,7 @@ const post = (env, body) => env.json(env.ctx.doPost({ postData: { contents: JSON
 
 // ---------- preinscripcion (botón PayPal: guardar antes de cobrar) ----------
 
-test('preinscripcion crea la fila con Referencia de pago = PENDIENTE y avisa una vez', () => {
+test('preinscripcion crea la fila con Referencia de pago = PENDIENTE y no envía correo', () => {
   const env = crearEntorno();
   const res = env.json(env.ctx.preinscripcion({ accion: 'preinscripcion', tarifa: 'preventa', datos: DATOS }));
   assert.equal(res.ok, true);
@@ -29,19 +29,19 @@ test('preinscripcion crea la fila con Referencia de pago = PENDIENTE y avisa una
   assert.equal(h.getLastRow(), 2);
   assert.equal(h.getRange(2, env.colIndex('Inscritos', 'Referencia de pago')).getValue(), 'PENDIENTE');
   assert.equal(h.getRange(2, env.colIndex('Inscritos', 'Correo')).getValue(), 'ana@test.hn');
-  assert.equal(env.correos.length, 1);
-  assert.match(env.correos[0].subject, /Recibimos tus datos/);
+  // Sin correo al preinscribir: PayPal → solo bienvenida; transferencia → correo con datos bancarios
+  assert.equal(env.correos.length, 0);
 });
 
-test('segunda preinscripción del mismo correo crea otra fila pero no repite el correo', () => {
+test('segunda preinscripción del mismo correo crea otra fila', () => {
   const env = crearEntorno();
   env.ctx.preinscripcion({ accion: 'preinscripcion', tarifa: 'preventa', datos: DATOS });
   env.ctx.preinscripcion({ accion: 'preinscripcion', tarifa: 'preventa', datos: DATOS });
 
   const h = env.hoja('Inscritos');
   assert.equal(h.getLastRow(), 3); // la página es pública: fila nueva, no se sobrescribe
-  assert.equal(env.correos.length, 1);
-  assert.equal(h.getRange(3, env.colIndex('Inscritos', 'Correo enviado')).getValue(), 'No (repetido)');
+  assert.equal(env.correos.length, 0);
+  assert.equal(h.getRange(3, env.colIndex('Inscritos', 'Correo enviado')).getValue(), 'No');
 });
 
 test('preinscripcion rechaza si faltan campos o la tarifa está vencida', () => {
@@ -94,7 +94,7 @@ test('doPost sin acción reconocida no cobra ni registra (ruta legacy retirada)'
 test('escribir la transacción a mano queda marcado como edición sin verificación, sin bienvenida', () => {
   const env = crearEntorno();
   env.ctx.preinscripcion({ accion: 'preinscripcion', tarifa: 'preventa', datos: DATOS });
-  assert.equal(env.correos.length, 1); // correo "datos recibidos"
+  assert.equal(env.correos.length, 0); // preinscribir no envía correo
 
   const h = env.hoja('Inscritos');
   const cRef = env.colIndex('Inscritos', 'Referencia de pago');
@@ -102,7 +102,7 @@ test('escribir la transacción a mano queda marcado como edición sin verificaci
   env.ctx.alEditarHoja(env.edicion(h, 2, cRef));
 
   // No hay bienvenida: el pago sigue Pendiente hasta confirmarlo desde el menú
-  assert.equal(env.correos.length, 1);
+  assert.equal(env.correos.length, 0);
   assert.match(String(h.getRange(2, env.colIndex('Inscritos', 'Estado de gestión')).getValue()), /sin verificación/);
   assert.equal(h.getRange(2, env.colIndex('Inscritos', 'Estatus de Pago')).getValue(), 'Pendiente');
   // La edición quedó auditada
@@ -115,7 +115,7 @@ test('editar otra columna no dispara correos', () => {
   env.ctx.preinscripcion({ accion: 'preinscripcion', tarifa: 'preventa', datos: DATOS });
   const h = env.hoja('Inscritos');
   env.ctx.alEditarHoja(env.edicion(h, 2, env.colIndex('Inscritos', 'Notas')));
-  assert.equal(env.correos.length, 1); // solo el de "datos recibidos"
+  assert.equal(env.correos.length, 0);
 });
 
 // ---------- Flujo de estudiante ----------
