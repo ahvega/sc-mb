@@ -22,7 +22,7 @@ El formulario de la landing (`site/js/inscripcion.js`) habla con un script de Go
 
 Sin un carné aprobado no se puede pagar la tarifa de estudiante: el script lo rechaza aunque alguien intente saltarse la página.
 
-## Cómo se confirma un pago (tarjeta o transferencia)
+## Cómo se confirma un pago a mano (transferencia, o PayPal que no se pudo vincular solo)
 
 1. La persona llena el formulario y sus datos se guardan en **Inscritos** con `Estatus de Pago` = `Pendiente` y un `Registration ID` propio.
 2. Paga con el botón de PayPal de su tarifa, o elige **Transferencia**: la página le muestra los datos bancarios (solo si los configuraste, ver abajo) y le pide la foto del comprobante.
@@ -33,6 +33,20 @@ Sin un carné aprobado no se puede pagar la tarifa de estudiante: el script lo r
 ⚠️ **Escribir la referencia a mano en la celda ya no confirma nada**: queda marcado como "Edición manual sin verificación" en `Estado de gestión` y se registra en **Auditoría**. La misma referencia no puede usarse para dos personas.
 
 Las filas `Pendiente` no ocupan cupo ni salen en **Gafetes**. Si alguien se inscribe dos veces, verás dos filas pendientes con su correo: deja la que coincida con el pago y borra la otra.
+
+## Pagos con PayPal: bienvenida automática
+
+Los pagos con PayPal (saldo o tarjeta de crédito/débito) **se confirman solos**: PayPal avisa al script (IPN), el script le pregunta a PayPal si el aviso es auténtico, busca la fila `Pendiente` del mismo monto con el **mismo correo** (o, si no, el mismo nombre y apellido de una sola persona) y la pasa a `Completado` con `Verificado por` = `PayPal (automático)`. La bienvenida sale en ese momento.
+
+Si no logra saber de quién es el pago (correo y nombre distintos, monto distinto), deja el pago en **Acreditaciones** como `Sin inscripción — revisar` y te escribe a storycrafters@themediabuilders.com. Ahí lo confirmas tú con el menú, usando la transacción del correo. Las transferencias siguen siendo 100 % manuales.
+
+Configuración (una sola vez):
+
+1. **Propiedad del script** `PAYPAL_RECEPTOR`: el correo principal de la cuenta PayPal Business de Media Builders (o su Merchant ID). Sin esto no se acredita nada solo.
+2. **En PayPal**: Configuración de la cuenta → **Notificaciones** → **Notificaciones instantáneas de pago (IPN)** → Elegir configuración de IPN → URL de notificación = la URL `/exec` del script → **Recibir mensajes IPN (Habilitado)** → Guardar.
+3. Vuelve a implementar el script (Implementar → Gestionar implementaciones → editar → Nueva versión) para que la URL `/exec` tenga este código.
+
+Para probar con el simulador de IPN de PayPal (sandbox), pon temporalmente `PAYPAL_IPN_PRUEBAS` = `si`; quítala al terminar. Nota: Apps Script contesta a PayPal con una redirección (302), así que en el historial de IPN de PayPal puede aparecer "reintentando" aunque el pago ya se haya acreditado; los reintentos no duplican nada.
 
 ## Configurar operadores y transferencias
 

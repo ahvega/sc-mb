@@ -449,6 +449,7 @@
 
   ventana.querySelector('[data-pp-elige="tarjeta"]').addEventListener('click', function () {
     vistaVentana('tarjeta');
+    ventana.querySelector('[data-pp-auto]').hidden = false; // con registro guardado, PayPal acredita solo
     montarBotonTarjeta(nVentana);
   });
   ventana.querySelector('[data-pp-elige="transferencia"]').addEventListener('click', function () {
