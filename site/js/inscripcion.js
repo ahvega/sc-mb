@@ -122,7 +122,7 @@
     idem = null; // envío nuevo: nueva clave de idempotencia
 
     if (esEstudiante()) {
-      if (!API && !demo) return error('La inscripción de estudiantes abre muy pronto. Escríbenos a info@themediabuilders.com.');
+      if (!API && !demo) return error('La inscripción de estudiantes abre muy pronto. Escríbenos a storycrafters@themediabuilders.com.');
       return enviarCarne();
     }
     cargarTarifaVigente();
@@ -308,7 +308,7 @@
 
   function abrirVentanaPago() {
     var id = BOTONES[tarifa.id];
-    if (!id) return error('No encontramos el botón de pago para la tarifa ' + tarifa.nombre + '. Escríbenos a info@themediabuilders.com.');
+    if (!id) return error('No encontramos el botón de pago para la tarifa ' + tarifa.nombre + '. Escríbenos a storycrafters@themediabuilders.com.');
     pintarResumen(ventana.querySelector('[data-pp-resumen]'));
     var esta = ++nVentana;
     contBoton.innerHTML = '';
@@ -356,7 +356,7 @@
     listo.then(function (res) {
       if (esta !== nVentana) return;
       if (!res || !res.ok) {
-        aviso.textContent = (res && res.error) || 'No pudimos preparar el pago. Intenta de nuevo o escríbenos a info@themediabuilders.com.';
+        aviso.textContent = (res && res.error) || 'No pudimos preparar el pago. Intenta de nuevo o escríbenos a storycrafters@themediabuilders.com.';
         return;
       }
       var id = BOTONES[tarifa.id];
@@ -549,7 +549,7 @@
       })
       .catch(function (err) {
         error(err && err.message && !/fetch/i.test(err.message) ? err.message
-          : 'Se perdió la conexión al confirmar. Escríbenos a info@themediabuilders.com antes de intentar de nuevo.');
+          : 'Se perdió la conexión al confirmar. Escríbenos a storycrafters@themediabuilders.com antes de intentar de nuevo.');
       })
       .then(function () {
         enviando = false;
@@ -589,7 +589,7 @@
       aviso('Validando tu enlace…');
       api('GET', null, 'codigo=' + encodeURIComponent(codigo))
         .then(function (res) {
-          if (!res.ok) return aviso(escapar(res.error) + ' Si crees que es un error, escríbenos a <a href="mailto:info@themediabuilders.com">info@themediabuilders.com</a>.');
+          if (!res.ok) return aviso(escapar(res.error) + ' Si crees que es un error, escríbenos a <a href="mailto:storycrafters@themediabuilders.com">storycrafters@themediabuilders.com</a>.');
           if (!res.tarifa.disponible) return aviso('La tarifa de estudiante ya no está disponible.');
           datos = res.estudiante;
           mostrarPago(res.tarifa);
