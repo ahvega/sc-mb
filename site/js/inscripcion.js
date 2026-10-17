@@ -276,7 +276,11 @@
     var espera = new Promise(function (ok) { setTimeout(function () { ok('timeout'); }, 20000); });
     Promise.race([api('POST', cuerpo), espera])
       .then(function (res) {
-        if (res === 'timeout') return api('POST', cuerpo).catch(function () { return null; });
+        // Reintento único con la MISMA clave, con su propio límite: no deja el botón colgado
+        if (res === 'timeout') {
+          var espera2 = new Promise(function (ok) { setTimeout(function () { ok(null); }, 20000); });
+          return Promise.race([api('POST', cuerpo).catch(function () { return null; }), espera2]);
+        }
         return res;
       })
       .then(function (res) {

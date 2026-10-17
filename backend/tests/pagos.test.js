@@ -297,6 +297,61 @@ test('confirmarPago consume el código de estudiante una sola vez', () => {
   assert.match(r2.error, /ya se usó/);
 });
 
+test('dos preinscripciones con el mismo código de estudiante: solo una puede acreditarse', () => {
+  const env = crearEntorno(OPS);
+  const b64 = Buffer.from('carne').toString('base64');
+  env.ctx.solicitudEstudiante({ accion: 'solicitudEstudiante', datos: DATOS, institucion: 'UNITEC', carne: { nombre: 'c.png', tipo: 'image/png', base64: b64 } });
+  const he = env.hoja('Estudiantes');
+  he.getRange(2, env.colIndex('Estudiantes', 'Estado')).setValue('Aprobado');
+  env.ctx.procesarEstado(he, 2);
+  const codigo = String(he.getRange(2, env.colIndex('Estudiantes', 'Código')).getValue());
+  // dos filas Pendiente con el mismo código (ambas creadas antes del primer pago)
+  env.json(env.ctx.preinscripcion({ accion: 'preinscripcion', tarifa: 'estudiante', codigo: codigo, idempotencia: 'a' }));
+  env.json(env.ctx.preinscripcion({ accion: 'preinscripcion', tarifa: 'estudiante', codigo: codigo, idempotencia: 'b' }));
+  assert.equal(env.ctx.confirmarPago(2, { metodo: 'PayPal', referencia: 'TXN-A', monto: 64, moneda: 'USD', confirmo: true }).ok, true);
+  const r = env.ctx.confirmarPago(3, { metodo: 'PayPal', referencia: 'TXN-B', monto: 64, moneda: 'USD', confirmo: true });
+  assert.equal(r.ok, false);
+  assert.match(r.error, /ya se usó/);
+  assert.equal(env.hoja('Inscritos').getRange(3, col(env, 'Estatus de Pago')).getValue(), 'Pendiente');
+});
+
+test('el cupo de estudiantes (10) también se verifica al confirmar, bajo lock', () => {
+  const env = crearEntorno(OPS);
+  const h = env.hoja('Inscritos');
+  const llena = function () {
+    const f = new Array(col(env, 'Código estudiante')).fill('');
+    f[col(env, 'Tarifa') - 1] = 'Estudiante';
+    f[col(env, 'Estatus de Pago') - 1] = 'Completado';
+    f[col(env, 'Referencia de pago') - 1] = 'TXN-E' + h.getLastRow();
+    h.appendRow(f);
+  };
+  for (let i = 0; i < 9; i++) llena(); // 9 completadas: la preinscripción aún cabe
+  const b64 = Buffer.from('carne').toString('base64');
+  env.ctx.solicitudEstudiante({ accion: 'solicitudEstudiante', datos: DATOS, institucion: 'U', carne: { nombre: 'c.png', tipo: 'image/png', base64: b64 } });
+  const he = env.hoja('Estudiantes');
+  he.getRange(2, env.colIndex('Estudiantes', 'Estado')).setValue('Aprobado');
+  env.ctx.procesarEstado(he, 2);
+  const codigo = String(he.getRange(2, env.colIndex('Estudiantes', 'Código')).getValue());
+  env.json(env.ctx.preinscripcion({ accion: 'preinscripcion', tarifa: 'estudiante', codigo: codigo })); // fila 11, Pendiente
+  llena(); // entre la preinscripción y la confirmación se llenó el cupo de estudiantes
+  const r = env.ctx.confirmarPago(11, { metodo: 'PayPal', referencia: 'TXN-E11', monto: 64, moneda: 'USD', confirmo: true });
+  assert.equal(r.ok, false);
+  assert.equal(r.sinCupo, true);
+  assert.equal(h.getRange(11, col(env, 'Estatus de Pago')).getValue(), 'Pendiente');
+});
+
+test('la resubida de comprobante vuelve a notificar al equipo (eventKey por archivo)', () => {
+  const env = crearEntorno(BANCO);
+  const regId = pre(env).registrationId;
+  const i1 = post(env, { accion: 'iniciarPago', registrationId: regId, metodo: 'transferencia' });
+  const arch = { nombre: 'c.png', tipo: 'image/png', base64: Buffer.from('img').toString('base64') };
+  post(env, { accion: 'subirComprobante', registrationId: regId, token: i1.token, archivo: arch });
+  const i2 = post(env, { accion: 'iniciarPago', registrationId: regId, metodo: 'transferencia' });
+  post(env, { accion: 'subirComprobante', registrationId: regId, token: i2.token, archivo: arch });
+  const avisos = env.correos.filter(c => /Comprobante recibido/.test(c.subject));
+  assert.equal(avisos.length, 2); // el equipo ve el comprobante corregido, no solo el primero
+});
+
 // ---------- migración y lista de espera ----------
 
 test('migrar asigna Registration ID y traduce el estado legado sin reenviar bienvenidas', () => {

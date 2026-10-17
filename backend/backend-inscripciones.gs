@@ -680,8 +680,8 @@ function subirComprobante(body) {
   }
 
   // Aviso al equipo con el archivo adjunto; WhatsApp queda como tarea manual (sin BSP configurado).
-  encolarNotificacion(regId, 'email', 'comprobante-equipo-v1', { archivoId: archivoId });
-  encolarNotificacion(regId, 'whatsapp', 'comprobante-equipo-v1', { archivoId: archivoId });
+  encolarNotificacion(regId, 'email', 'comprobante-equipo-v1', { archivoId: archivoId }, archivoId);
+  encolarNotificacion(regId, 'whatsapp', 'comprobante-equipo-v1', { archivoId: archivoId }, archivoId);
   procesarNotificaciones();
   return json({ ok: true, estado: 'Comprobante recibido. Tu pago queda pendiente hasta que el equipo verifique el abono en el banco.' });
 }
@@ -890,7 +890,11 @@ function confirmarPago(fila, p) {
 
     const settlementKey = metodo + ':' + referencia.toUpperCase().replace(/\s+/g, '');
     const dup = buscarSettlement(settlementKey);
-    if (dup && dup.regId === regId && dup.estado === 'Acreditado') return { ok: true, repetido: true };
+    if (dup && dup.regId === regId && dup.estado === 'Acreditado') {
+      // Reintento tras una escritura fallida: completa lo que falte (idempotente)
+      completarAcreditacion(hoja, fila, regId, metodo, referencia, monto, moneda, settlementKey, operador);
+      return { ok: true, repetido: true };
+    }
     if (dup && dup.regId !== regId) {
       audit('confirmar-duplicado', regId, 'settlement ' + settlementKey + ' ya usado por ' + dup.regId);
       return { ok: false, error: 'Esta referencia ya se aplicó a otro registro. No se confirmó.' };
@@ -899,7 +903,9 @@ function confirmarPago(fila, p) {
 
     // El cupo se verifica bajo el mismo lock en el momento de acreditar (F6):
     // Pendiente nunca reservó lugar; si ya está lleno, queda para gestión de devolución.
-    if (contarInscritos().total >= EVENTO.cupo) {
+    const esEstudiante = String(get('Tarifa')) === 'Estudiante';
+    const conteo = contarInscritos();
+    if (conteo.total >= EVENTO.cupo || (esEstudiante && conteo.estudiantes >= EVENTO.cupoEstudiantes)) {
       if (!dup) {
         hoja.getRange(fila, COL['Estado de gestión']).setValue('Pago recibido — cupo no disponible; gestionar devolución o alternativa');
         pestana(TAB_ACRED, COLUMNAS_ACRED).appendRow([settlementKey, regId, metodo, referencia, monto, moneda, new Date(), '', operador, 'Sin cupo — por devolver']);
@@ -907,6 +913,17 @@ function confirmarPago(fila, p) {
         SpreadsheetApp.flush();
       }
       return { ok: false, sinCupo: true, error: 'El pago llegó pero el cupo ya está lleno. Quedó registrado para gestionar la devolución.' };
+    }
+
+    // Dos filas creadas con el mismo código solo pueden acreditarse una vez: bajo el lock,
+    // el código debe seguir Aprobado y sin consumir al momento de acreditar.
+    const cod = String(get('Código estudiante'));
+    if (cod) {
+      const sol = buscarSolicitud(cod);
+      if (!sol || sol.estado !== 'Aprobado' || sol.pagado) {
+        audit('confirmar-codigo-usado', regId, 'código ' + cod + ' ya consumido o revocado');
+        return { ok: false, error: 'El código de estudiante ya se usó en otro pago confirmado. Revisa antes de acreditar.' };
+      }
     }
 
     const hAcred = pestana(TAB_ACRED, COLUMNAS_ACRED);
@@ -917,31 +934,46 @@ function confirmarPago(fila, p) {
     } else {
       hAcred.appendRow([settlementKey, regId, metodo, referencia, monto, moneda, new Date(), String(p.evidencia || ''), operador, 'Acreditado']);
     }
-    const set = function (c, val) { hoja.getRange(fila, COL[c]).setValue(val); };
-    set('Estatus de Pago', ESTATUS_PAGO.COMPLETADO);
-    set('Referencia de pago', referencia);
-    set('Método de pago', metodo);
-    set('Monto cobrado', monto);
-    set('Moneda', moneda);
-    set('Pago verificado el', new Date());
-    set('Verificado por', operador);
-    set('Estado de gestión', 'Verificado por operador');
-    cerrarIntento(regId, 'verified', referencia, operador);
-
-    // Estudiante: consumir el código de un solo uso (F5)
-    const cod = String(get('Código estudiante'));
-    if (cod) consumirCodigoEstudiante(cod, referencia);
-    audit('confirmar-pago', regId, settlementKey + ' · ' + moneda + ' ' + monto);
-    SpreadsheetApp.flush();
+    completarAcreditacion(hoja, fila, regId, metodo, referencia, monto, moneda, settlementKey, operador);
+    return { ok: true, fila: fila, registrationId: regId };
+  } catch (err) {
+    console.error(err);
+    return { ok: false, error: 'No se pudo confirmar: ' + String(err).slice(0, 200) };
   } finally {
     lock.releaseLock();
   }
+}
+
+/**
+ * Escrituras que completan una acreditación: fila del inscrito, cierre del intento,
+ * consumo del código de estudiante y encolado de la bienvenida. Idempotente — la llama
+ * confirmarPago en el camino nuevo y en el reintento tras una falla parcial.
+ */
+function completarAcreditacion(hoja, fila, regId, metodo, referencia, monto, moneda, settlementKey, operador) {
+  const ancho = Math.min(COLUMNAS.length, Math.max(hoja.getLastColumn(), 1));
+  const v = hoja.getRange(fila, 1, 1, ancho).getValues()[0];
+  const get = function (c) { return v[COL[c] - 1]; };
+  const set = function (c, val) { hoja.getRange(fila, COL[c]).setValue(val); };
+  set('Estatus de Pago', ESTATUS_PAGO.COMPLETADO);
+  set('Referencia de pago', referencia);
+  set('Método de pago', metodo);
+  set('Monto cobrado', monto);
+  set('Moneda', moneda);
+  set('Pago verificado el', new Date());
+  set('Verificado por', operador);
+  set('Estado de gestión', 'Verificado por operador');
+  cerrarIntento(regId, 'verified', referencia, operador);
+
+  // Estudiante: consumir el código de un solo uso (F5)
+  const cod = String(get('Código estudiante'));
+  if (cod) consumirCodigoEstudiante(cod, referencia);
+  audit('confirmar-pago', regId, settlementKey + ' · ' + moneda + ' ' + monto);
+  SpreadsheetApp.flush();
 
   // Bienvenida por la cola única de notificaciones (F1): correo automático, WhatsApp como tarea manual.
   encolarNotificacion(regId, 'email', 'bienvenida-v1', {});
   encolarNotificacion(regId, 'whatsapp', 'bienvenida-v1', {});
   procesarNotificaciones();
-  return { ok: true };
 }
 
 /** Escribe "Pagado (referencia)" en la solicitud del estudiante una sola vez. */
@@ -957,8 +989,9 @@ function consumirCodigoEstudiante(codigo, referencia) {
  * Encola un evento único por eventKey (registrationId:plantilla:canal). Si ya existe no duplica.
  * Canal 'whatsapp' queda en estado 'manual' hasta que haya un proveedor configurado (A2).
  */
-function encolarNotificacion(regId, canal, plantilla, datos) {
-  const eventKey = regId + ':' + plantilla + ':' + canal;
+function encolarNotificacion(regId, canal, plantilla, datos, sufijo) {
+  // El sufijo distingue eventos repetibles del mismo tipo (p. ej. cada comprobante subido)
+  const eventKey = regId + ':' + plantilla + ':' + canal + (sufijo ? ':' + sufijo : '');
   const h = pestana(TAB_NOTIF, COLUMNAS_NOTIF);
   const n = h.getLastRow() - 1;
   if (n > 0) {
@@ -986,13 +1019,16 @@ function procesarNotificaciones() {
     for (let i = 0; i < vs.length; i++) {
       const estado = String(vs[i][4]);
       const intentos = Number(vs[i][5]) || 0;
-      if ((estado !== 'queued' && estado !== 'failed') || String(vs[i][2]) !== 'email' || intentos >= NOTIF_MAX_INTENTOS) continue;
+      // 'sending' con reclamo de hace >10 min: la ejecución murió antes del resultado → se reintenta
+      const reclamoViejo = estado === 'sending' && (new Date() - new Date(vs[i][7]).getTime()) > 10 * 60 * 1000;
+      if ((estado !== 'queued' && estado !== 'failed' && !reclamoViejo) || String(vs[i][2]) !== 'email' || intentos >= NOTIF_MAX_INTENTOS) continue;
       const fila = i + 2;
       const regId = String(vs[i][1]);
       const plantilla = String(vs[i][3]);
       let datos = {};
       try { datos = JSON.parse(String(vs[i][9]) || '{}'); } catch (e) { datos = {}; }
       h.getRange(fila, 5).setValue('sending'); // reclamo antes de llamar al servicio externo
+      h.getRange(fila, 8).setValue(new Date()); // marca de tiempo del reclamo (se sobrescribe al enviar)
       SpreadsheetApp.flush();
       try {
         enviarNotificacion(regId, plantilla, datos);
@@ -1063,9 +1099,14 @@ function enviarNotificacion(regId, plantilla, datos) {
   throw new Error('Plantilla desconocida: ' + plantilla);
 }
 
-/** Menú/manual: migra la hoja al esquema v2. Idempotente y conservadora (plan §5, R7). */
+/** Menú/manual: migra la hoja al esquema v2. Idempotente y conservadora (plan §5, R7).
+ *  Corre bajo el lock compartido: el cron del outbox o una confirmación concurrente
+ *  no pueden intercalarse entre el encolado y la marca de "ya enviado". */
 function migrar() {
   asegurarEsquema();
+  const lock = LockService.getScriptLock();
+  lock.waitLock(25000);
+  try {
   const hoja = hojaInscritos();
   const filas = leerInscritos(hoja);
   filas.forEach(function (r, i) {
@@ -1097,11 +1138,15 @@ function migrar() {
         }
       }
       // Sembrar el historial para que la cola nunca reenvíe estas bienvenidas:
-      // solo si la encoló de verdad (si el evento ya existía no hay fila nueva que marcar)
-      if (encolarNotificacion(regId, 'email', 'bienvenida-v1', {})) {
-        const h = pestana(TAB_NOTIF, COLUMNAS_NOTIF);
-        h.getRange(h.getLastRow(), 5).setValue('sent');
-        h.getRange(h.getLastRow(), 8).setValue(new Date());
+      // fila histórica insertada ya en 'sent' (no pasa por el worker).
+      const hN = pestana(TAB_NOTIF, COLUMNAS_NOTIF);
+      const key = regId + ':bienvenida-v1:email';
+      let existe = false;
+      for (let i = 2; i <= hN.getLastRow(); i++) {
+        if (String(hN.getRange(i, 1).getValue()) === key) { existe = true; break; }
+      }
+      if (!existe) {
+        hN.appendRow([key, regId, 'email', 'bienvenida-v1', 'sent', 0, new Date(), new Date(), '', '{"legado":true}']);
       }
     } else {
       set('Estatus de Pago', ESTATUS_PAGO.PENDIENTE);
@@ -1110,6 +1155,9 @@ function migrar() {
   });
   rehacerVistas(SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('HOJA_ID')));
   SpreadsheetApp.flush();
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 // ---------- Tarifa de estudiante ----------
