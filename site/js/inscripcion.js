@@ -24,7 +24,7 @@
   // Sin backend (modo demo o solo con botones de PayPal) la tarifa vigente sale de estas fechas.
   // Con backend, las tarifas vienen de Apps Script. Mantener igual a los data-end de .tier en index.html.
   var TARIFAS = [
-    { id: 'preventa', nombre: 'Preventa', usd: 64, hasta: '2026-11-05' },
+    { id: 'preventa', nombre: 'Early Bird', usd: 64, hasta: '2026-11-05' },
     { id: 'regular', nombre: 'Regular', usd: 72, hasta: '2026-11-25' },
     { id: 'finales', nombre: 'Cupos finales', usd: 82, hasta: '2026-12-11' },
   ];
