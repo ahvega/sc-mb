@@ -50,7 +50,7 @@ test('preinscripcion rechaza si faltan campos o la tarifa está vencida', () => 
   assert.equal(res.ok, false);
   assert.equal(env.hoja('Inscritos').getLastRow(), 1);
 
-  env.setHoy('2026-11-10'); // Preventa cerró el 5-nov
+  env.setHoy('2026-11-10'); // Early Bird cerró el 5-nov
   const res2 = env.json(env.ctx.preinscripcion({ accion: 'preinscripcion', tarifa: 'preventa', datos: DATOS }));
   assert.equal(res2.ok, false);
   assert.match(res2.error, /ya no está disponible/);
