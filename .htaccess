@@ -1,0 +1,32 @@
+# STORYCRAFTERS landing — sc.themediabuilders.com
+
+# Forzar HTTPS
+RewriteEngine On
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Defensa en profundidad: nada que no sea el sitio debe servirse
+RedirectMatch 404 /\.git
+<FilesMatch "(\.md|\.dc\.html|\.htaccess)$">
+  Require all denied
+</FilesMatch>
+
+DirectoryIndex index.html
+Options -Indexes
+
+# Compresión
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json image/svg+xml
+</IfModule>
+
+# Caché: el HTML se revalida siempre (precios/fechas cambian); imágenes largo plazo
+<IfModule mod_headers.c>
+  <FilesMatch "\.(html|css|js)$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+  <FilesMatch "\.(jpg|jpeg|png|webp|avif|svg|woff2|ico|webmanifest)$">
+    Header set Cache-Control "public, max-age=604800"
+  </FilesMatch>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
