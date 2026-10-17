@@ -3,10 +3,12 @@
  *
  * Flujo (issue #20): la landing guarda la preinscripción ANTES de cobrar (Estatus de Pago =
  * Pendiente, Registration ID). El participante paga con el botón guardado de PayPal o por
- * transferencia (sube foto del comprobante). TODO pago queda Pendiente hasta que una persona
- * autorizada verifique el abono real — en PayPal o en el banco — y lo confirme desde el menú
- * STORYCRAFTERS de la hoja. Solo entonces se marca Completado y sale la bienvenida por la cola
- * de notificaciones. Escribir la referencia a mano en la celda ya no aprueba nada.
+ * transferencia (sube foto del comprobante). Los pagos de PayPal (saldo o tarjeta) se acreditan
+ * solos cuando PayPal avisa por IPN y el aviso se verifica (ver ipnPayPal). Las transferencias, y
+ * cualquier pago de PayPal que no se pueda vincular solo, quedan Pendiente hasta que una persona
+ * autorizada verifique el abono y lo confirme desde el menú STORYCRAFTERS de la hoja. Al acreditar
+ * se marca Completado y sale la bienvenida por la cola de notificaciones. Escribir la referencia a
+ * mano en la celda no aprueba nada.
  *
  * Instalación: ver LEEME.md en la misma carpeta.
  */
@@ -307,6 +309,10 @@ function doGet(e) {
 /** POST: despacha por body.accion. El flujo antiguo ({pago, tarifa, datos}) se retiró (issue #20):
  * ningún cobro puede quedar sin preinscripción trazable ni saltarse la verificación humana. */
 function doPost(e) {
+  // Aviso de PayPal (IPN): llega como formulario, no como JSON de la landing
+  const prm = (e && e.parameter) || {};
+  if (prm.txn_id || prm.txn_type || prm.payment_status) return ipnPayPal(e);
+
   let body;
   try {
     body = JSON.parse(e.postData.contents);
@@ -425,7 +431,7 @@ function preinscripcion(body) {
         'Recibimos tus <span>datos</span>',
         ['¡Hola, ' + saludo + '! Ya tenemos tus datos para la masterclass STORYCRAFTERS (' + EVENTO.fecha + ').',
          'Para asegurar tu lugar, completa tu pago de USD ' + t.usd + ' (tarifa ' + t.nombre + ') en la ventana de PayPal de la página.',
-         'Si ya pagaste, no tienes que hacer nada más: en cuanto confirmemos tu pago te llegará el correo de bienvenida. ' +
+         'Si ya pagaste con PayPal o con tarjeta, no tienes que hacer nada más: el correo de bienvenida te llega solo en unos minutos. ' +
            '¿Dudas? Responde este correo o escríbenos al ' + WHATSAPP_EQUIPO + '.'],
         { texto: 'Ir a la inscripción', url: LANDING_URL + '#inscripcion' });
     } catch (err) {
@@ -842,6 +848,15 @@ function confirmarPago(fila, p) {
   if (!p || p.confirmo !== true) {
     return { ok: false, error: 'Marca la casilla solo después de verificar el abono en la cuenta.' };
   }
+  return acreditarPago_(fila, p, operador);
+}
+
+/**
+ * Acredita un pago ya verificado (por un operador en confirmarPago, o por PayPal en ipnPayPal).
+ * No es una acción pública: ningún doPost la llama con datos del navegador, y el guion bajo final
+ * impide llamarla con google.script.run.
+ */
+function acreditarPago_(fila, p, operador) {
   const metodo = p.metodo === METODOS.TRANSFERENCIA ? METODOS.TRANSFERENCIA : p.metodo === METODOS.PAYPAL ? METODOS.PAYPAL : null;
   // Sin prefijo de fórmula: la referencia la escribe una persona en varias celdas
   const referencia = String(p.referencia || '').trim().replace(/^[=+\-@]+/, '').slice(0, 80);
@@ -895,7 +910,7 @@ function confirmarPago(fila, p) {
       completarAcreditacion(hoja, fila, regId, metodo, referencia, monto, moneda, settlementKey, operador);
       return { ok: true, repetido: true };
     }
-    if (dup && dup.regId !== regId) {
+    if (dup && dup.regId && dup.regId !== regId) {
       audit('confirmar-duplicado', regId, 'settlement ' + settlementKey + ' ya usado por ' + dup.regId);
       return { ok: false, error: 'Esta referencia ya se aplicó a otro registro. No se confirmó.' };
     }
@@ -906,9 +921,15 @@ function confirmarPago(fila, p) {
     const esEstudiante = String(get('Tarifa')) === 'Estudiante';
     const conteo = contarInscritos();
     if (conteo.total >= EVENTO.cupo || (esEstudiante && conteo.estudiantes >= EVENTO.cupoEstudiantes)) {
-      if (!dup) {
+      if (!dup || !dup.regId) {
         hoja.getRange(fila, COL['Estado de gestión']).setValue('Pago recibido — cupo no disponible; gestionar devolución o alternativa');
-        pestana(TAB_ACRED, COLUMNAS_ACRED).appendRow([settlementKey, regId, metodo, referencia, monto, moneda, new Date(), '', operador, 'Sin cupo — por devolver']);
+        if (dup) {
+          const hA = pestana(TAB_ACRED, COLUMNAS_ACRED);
+          hA.getRange(dup.fila, 2).setValue(regId);
+          hA.getRange(dup.fila, 10).setValue('Sin cupo — por devolver');
+        } else {
+          pestana(TAB_ACRED, COLUMNAS_ACRED).appendRow([settlementKey, regId, metodo, referencia, monto, moneda, new Date(), String(p.evidencia || ''), operador, 'Sin cupo — por devolver']);
+        }
         audit('confirmar-sin-cupo', regId, settlementKey);
         SpreadsheetApp.flush();
       }
@@ -927,7 +948,8 @@ function confirmarPago(fila, p) {
     }
 
     const hAcred = pestana(TAB_ACRED, COLUMNAS_ACRED);
-    if (dup) { // misma fila, settlement previo sin acreditar: se actualiza esa fila
+    if (dup) { // settlement previo sin acreditar (sin cupo, o pago de PayPal sin inscripción vinculada)
+      hAcred.getRange(dup.fila, 2).setValue(regId);
       hAcred.getRange(dup.fila, 7).setValue(new Date());
       hAcred.getRange(dup.fila, 9).setValue(operador);
       hAcred.getRange(dup.fila, 10).setValue('Acreditado');
@@ -961,7 +983,7 @@ function completarAcreditacion(hoja, fila, regId, metodo, referencia, monto, mon
   set('Moneda', moneda);
   set('Pago verificado el', new Date());
   set('Verificado por', operador);
-  set('Estado de gestión', 'Verificado por operador');
+  set('Estado de gestión', operador === ACTOR_PAYPAL ? 'Verificado por PayPal (automático)' : 'Verificado por operador');
   cerrarIntento(regId, 'verified', referencia, operador);
 
   // Estudiante: consumir el código de un solo uso (F5)
@@ -1501,6 +1523,164 @@ function enviarCorreoSimple(para, asunto, titulo, parrafos, boton) {
     'INVESTIGA · ESTRUCTURA · GRABA<br>STORYCRAFTERS · MEDIA BUILDERS · SC.THEMEDIABUILDERS.COM</p></td></tr>' +
     '</table></td></tr></table></div>';
   enviarCorreo({ to: para, subject: asunto, htmlBody: html, name: REMITENTE, replyTo: CORREO_EVENTO });
+}
+
+// ---------- Pago automático con PayPal (IPN) ----------
+// PayPal avisa a la URL /exec cada vez que entra un pago (PayPal → Configuración → Notificaciones →
+// Notificaciones instantáneas de pago). El aviso solo se cree si PayPal lo confirma (VERIFIED), va
+// dirigido a nuestra cuenta (PAYPAL_RECEPTOR) y está Completed. Se busca la preinscripción
+// Pendiente del mismo monto por correo (o por nombre, si es único) y se acredita sola: sale la
+// bienvenida sin que nadie toque la hoja. Si no se encuentra a quién pertenece, queda en
+// "Acreditaciones" como "Sin inscripción — revisar" y se avisa al equipo para confirmarlo a mano
+// desde el menú. Transferencias siguen siendo 100 % manuales.
+
+const ACTOR_PAYPAL = 'PayPal (automático)';
+const IPN_LIVE = 'https://ipnpb.paypal.com/cgi-bin/webscr';
+const IPN_SANDBOX = 'https://ipnpb.sandbox.paypal.com/cgi-bin/webscr';
+const ACRED_SIN_INSCRIPCION = 'Sin inscripción — revisar';
+
+function ipnPayPal(e) {
+  const ok = ContentService.createTextOutput('OK');
+  const p = e.parameter || {};
+  const props = PropertiesService.getScriptProperties();
+  const txn = String(p.txn_id || '').trim().replace(/[^A-Za-z0-9-]/g, '').slice(0, 40);
+  const estado = String(p.payment_status || '');
+  try {
+    const prueba = String(p.test_ipn || '') === '1';
+    if (prueba && props.getProperty('PAYPAL_IPN_PRUEBAS') !== 'si') {
+      audit('ipn-prueba-ignorado', '', txn);
+      return ok;
+    }
+    const res = UrlFetchApp.fetch(prueba ? IPN_SANDBOX : IPN_LIVE, {
+      method: 'post',
+      contentType: 'application/x-www-form-urlencoded',
+      payload: 'cmd=_notify-validate&' + e.postData.contents,
+      muteHttpExceptions: true,
+    });
+    if (String(res.getContentText()).trim() !== 'VERIFIED') {
+      audit('ipn-no-verificado', '', txn + ' · ' + String(res.getContentText()).slice(0, 50));
+      return ok;
+    }
+
+    const receptores = String(props.getProperty('PAYPAL_RECEPTOR') || '').toLowerCase()
+      .split(',').map(function (x) { return x.trim(); }).filter(Boolean);
+    const destino = [p.receiver_email, p.business, p.receiver_id].map(function (x) { return String(x || '').trim().toLowerCase(); });
+    if (!receptores.length || !destino.some(function (x) { return x && receptores.indexOf(x) >= 0; })) {
+      audit('ipn-otra-cuenta', '', txn + ' · ' + destino.join(' / '));
+      avisarEquipoPago('Aviso de PayPal no aplicado — revisar la propiedad PAYPAL_RECEPTOR', p,
+        'El aviso no coincide con PAYPAL_RECEPTOR (' + (receptores.join(', ') || 'vacía') + '). Si el pago es de Media Builders, ' +
+        'confírmalo a mano desde el menú y corrige la propiedad en Apps Script.');
+      return ok;
+    }
+
+    if (['Refunded', 'Reversed', 'Canceled_Reversal'].indexOf(estado) >= 0) {
+      audit('ipn-' + estado.toLowerCase(), '', txn + ' · original ' + String(p.parent_txn_id || ''));
+      avisarEquipoPago('PayPal: ' + estado + ' de un pago', p,
+        'PayPal reporta ' + estado + ' de la transacción ' + String(p.parent_txn_id || '') + '. Revisa la inscripción correspondiente.');
+      return ok;
+    }
+    if (estado !== 'Completed' || !txn) {
+      audit('ipn-ignorado', '', txn + ' · ' + estado);
+      return ok;
+    }
+
+    const monto = Number(p.mc_gross);
+    const moneda = String(p.mc_currency || '').toUpperCase();
+    const correo = String(p.payer_email || '').trim().toLowerCase();
+    const nombre = String(p.first_name || '') + ' ' + String(p.last_name || '');
+    const settlementKey = METODOS.PAYPAL + ':' + txn.toUpperCase();
+    const evidencia = ('IPN verificado · ' + correo + ' · ' + nombre.trim()).slice(0, 200);
+
+    const lock = LockService.getScriptLock();
+    lock.waitLock(25000);
+    let reg = null;
+    try {
+      if (buscarSettlement(settlementKey)) { // reintento de PayPal: ya se procesó
+        audit('ipn-repetido', '', settlementKey);
+        return ok;
+      }
+      reg = buscarPendientePayPal(hojaInscritos(), correo, nombre, monto, moneda);
+      if (!reg) {
+        pestana(TAB_ACRED, COLUMNAS_ACRED).appendRow([settlementKey, '', METODOS.PAYPAL, txn, monto, moneda, new Date(), evidencia, ACTOR_PAYPAL, ACRED_SIN_INSCRIPCION]);
+        audit('ipn-sin-inscripcion', '', settlementKey + ' · ' + moneda + ' ' + monto);
+        SpreadsheetApp.flush();
+      }
+    } finally {
+      lock.releaseLock();
+    }
+
+    if (!reg) {
+      avisarEquipoPago('Pago de PayPal sin inscripción vinculada — confirmar a mano', p,
+        'No encontramos una inscripción pendiente de ' + moneda + ' ' + monto + ' con ese correo o nombre. ' +
+        'Busca a la persona en la hoja Inscritos y usa el menú STORYCRAFTERS ▸ Confirmar pago verificado con la referencia ' + txn + '.');
+      return ok;
+    }
+    const r = acreditarPago_(reg.fila, {
+      metodo: METODOS.PAYPAL, referencia: txn, monto: monto, moneda: moneda,
+      registrationId: reg.regId, evidencia: evidencia,
+    }, ACTOR_PAYPAL);
+    if (!r.ok) {
+      avisarEquipoPago('Pago de PayPal recibido pero no acreditado', p,
+        'Inscripción encontrada (fila ' + reg.fila + '), pero no se pudo acreditar: ' + r.error);
+    }
+  } catch (err) {
+    console.error('IPN: ' + err);
+    audit('ipn-error', '', txn + ' · ' + String(err).slice(0, 300));
+  }
+  return ok;
+}
+
+/**
+ * Preinscripción Pendiente que corresponde a un pago de PayPal: mismo monto y, en orden,
+ * mismo correo, o nombre y apellido del pagador dentro del nombre inscrito (solo si es una
+ * única persona). Si la misma persona tiene varias filas pendientes, la más reciente.
+ */
+function buscarPendientePayPal(hoja, correo, nombrePagador, monto, moneda) {
+  if (moneda !== 'USD' || !(monto > 0)) return null;
+  const filas = leerInscritos(hoja);
+  const g = function (r, c) { return r[COL[c] - 1]; };
+  const cand = [];
+  filas.forEach(function (r, i) {
+    if (String(g(r, 'Estatus de Pago')) !== ESTATUS_PAGO.PENDIENTE || !String(g(r, 'Registration ID'))) return;
+    const esperado = Number(g(r, 'Monto esperado')) || Number(g(r, 'Monto cobrado'));
+    if (Math.abs(esperado - monto) > 0.01) return;
+    cand.push({ fila: i + 2, regId: String(g(r, 'Registration ID')),
+      correo: String(g(r, 'Correo')).trim().toLowerCase(), nombre: String(g(r, 'Nombre (diploma y gafete)')) });
+  });
+  const ultima = function (lista) { return lista.length ? lista[lista.length - 1] : null; };
+
+  const porCorreo = correo ? cand.filter(function (c) { return c.correo === correo; }) : [];
+  if (porCorreo.length) return ultima(porCorreo);
+
+  const norm = function (x) {
+    return String(x || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+      .replace(/[^a-zñ ]/g, ' ').split(/\s+/).filter(Boolean);
+  };
+  const pag = norm(nombrePagador);
+  if (pag.length < 2) return null;
+  const porNombre = cand.filter(function (c) {
+    const t = norm(c.nombre);
+    return pag.every(function (x) { return t.indexOf(x) >= 0; });
+  });
+  const personas = porNombre.map(function (c) { return c.correo; })
+    .filter(function (x, i, a) { return a.indexOf(x) === i; });
+  return personas.length === 1 ? ultima(porNombre) : null;
+}
+
+function avisarEquipoPago(asunto, p, mensaje) {
+  try {
+    enviarCorreo({
+      to: CORREO_EVENTO,
+      subject: asunto,
+      name: REMITENTE,
+      body: mensaje + '\n\nTransacción: ' + String(p.txn_id || '') + '\nEstado: ' + String(p.payment_status || '') +
+        '\nMonto: ' + String(p.mc_currency || '') + ' ' + String(p.mc_gross || '') +
+        '\nPagador: ' + String(p.first_name || '') + ' ' + String(p.last_name || '') + ' <' + String(p.payer_email || '') + '>' +
+        '\nFecha PayPal: ' + String(p.payment_date || ''),
+    });
+  } catch (err) {
+    console.error('Aviso al equipo no enviado: ' + err);
+  }
 }
 
 // ---------- PayPal API (uso administrativo: consultar una transacción desde el menú) ----------
