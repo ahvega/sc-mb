@@ -24,7 +24,7 @@ const EVENTO = {
 // Los precios oficiales son en dólares (PayPal cobra en USD). hnl queda solo como referencia
 // interna para la hoja (columna "Precio (L)"), con la venta BCH del 15 oct 2026 (~27.03).
 const TARIFAS = {
-  preventa:   { nombre: 'Preventa',      usd: 64, hnl: 1700, desde: '2026-01-01', hasta: '2026-11-05' },
+  preventa:   { nombre: 'Early Bird',    usd: 64, hnl: 1700, desde: '2026-01-01', hasta: '2026-11-05' },
   regular:    { nombre: 'Regular',       usd: 72, hnl: 1900, desde: '2026-11-06', hasta: '2026-11-25' },
   finales:    { nombre: 'Cupos finales', usd: 82, hnl: 2200, desde: '2026-11-26', hasta: '2026-12-11' },
   estudiante: { nombre: 'Estudiante',    usd: 64, hnl: 1700, desde: '2026-01-01', hasta: '2026-12-11', carne: true },
@@ -215,7 +215,7 @@ function rehacerVistas(ss) {
     // Pendiente nuevo esquema + pendiente legado (ref PENDIENTE sin estatus todavía)
     ['Pagos por verificar', '=COUNTIF(' + cEst + ',"Pendiente") + COUNTIFS(' + cRef + ',"' + PAGO_PENDIENTE + '",' + cEst + ',"")'],
     ['Por tarifa', ''],
-    ['Preventa', '=COUNTIFS(' + col('Tarifa') + ',"Preventa",' + pagado + ambas(col('Tarifa') + ',"Preventa"') + ')'],
+    ['Early Bird', '=COUNTIFS(' + col('Tarifa') + ',"Early Bird",' + pagado + ambas(col('Tarifa') + ',"Early Bird"') + ')'],
     ['Regular', '=COUNTIFS(' + col('Tarifa') + ',"Regular",' + pagado + ambas(col('Tarifa') + ',"Regular"') + ')'],
     ['Cupos finales', '=COUNTIFS(' + col('Tarifa') + ',"Cupos finales",' + pagado + ambas(col('Tarifa') + ',"Cupos finales"') + ')'],
     ['Estudiante', '=COUNTIFS(' + col('Tarifa') + ',"Estudiante",' + pagado + ambas(col('Tarifa') + ',"Estudiante"') + ')'],
