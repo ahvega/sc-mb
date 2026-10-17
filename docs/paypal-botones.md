@@ -6,7 +6,7 @@ Este archivo no tiene contraseñas. El `client-id` es público: PayPal lo pone e
 
 | Precio | Para quién | Id. hospedado | Enlace de pago directo |
 |---|---|---|---|
-| 64 USD | Preventa y estudiantes | `EVQLQJYJFXG22` | https://www.paypal.com/ncp/payment/EVQLQJYJFXG22 |
+| 64 USD | Early Bird y estudiantes | `EVQLQJYJFXG22` | https://www.paypal.com/ncp/payment/EVQLQJYJFXG22 |
 | 72 USD | Regular | `HX6U8RXCBEBV2` | https://www.paypal.com/ncp/payment/HX6U8RXCBEBV2 |
 | 82 USD | Cupos finales | `LRTKVH5K9NE84` | https://www.paypal.com/ncp/payment/LRTKVH5K9NE84 |
 
@@ -20,7 +20,7 @@ Este archivo no tiene contraseñas. El `client-id` es público: PayPal lo pone e
 
 ## Parte 2: un bloque por botón, donde quieras que aparezca
 
-### 64 USD — Preventa y estudiantes
+### 64 USD — Early Bird y estudiantes
 
 ```html
 <div id="paypal-container-EVQLQJYJFXG22"></div>
