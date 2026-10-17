@@ -451,17 +451,57 @@
         </div>
       </div>
 
-      <!-- Ventana de pago con el botón guardado en PayPal (data-paypal-botones) -->
+      <!-- Ventana de pago: selector de método → tarjeta (botón PayPal) o transferencia con comprobante -->
       <dialog class="pp-modal" data-pp-modal aria-labelledby="pp-modal-titulo">
         <button class="pp-modal__close" type="button" data-pp-cerrar aria-label="Cerrar">×</button>
         <h3 id="pp-modal-titulo">Paga tu <span class="hl">inscripción</span></h3>
         <dl class="pay" data-pp-resumen></dl>
-        <div class="insc__paypal" data-pp-boton></div>
-        <p class="panel__small">Pago único y seguro con tarjeta de crédito o débito, o con tu cuenta PayPal. Al terminar, PayPal te envía el recibo por correo.</p>
-        <p class="pp-modal__paso" data-pp-paso><b>Último paso:</b> después de pagar, envíanos tus datos por WhatsApp para confirmar tu lugar.</p>
-        <a class="btn btn--primary pp-modal__wa" data-pp-wa href="https://wa.me/50492520327" target="_blank" rel="noopener">Enviar mis datos por WhatsApp →</a>
+
+        <!-- Selector de método: solo con backend (registrationId). Tus datos ya quedaron guardados. -->
+        <div data-pp-metodos hidden>
+          <p class="panel__small">Tu inscripción ya quedó guardada. Elige cómo quieres pagar:</p>
+          <button class="btn btn--primary pp-modal__metodo" type="button" data-pp-elige="tarjeta">Tarjeta de crédito o débito →</button>
+          <button class="btn pp-modal__metodo" type="button" data-pp-elige="transferencia">Transferencia bancaria →</button>
+        </div>
+
+        <!-- Tarjeta: el botón se monta solo al elegir este método -->
+        <div data-pp-tarjeta hidden>
+          <div class="insc__paypal" data-pp-boton></div>
+          <p class="panel__small">Pago único y seguro con tarjeta de crédito o débito, o con tu cuenta PayPal. Al terminar, PayPal te envía el recibo por correo.</p>
+          <p class="pp-modal__paso" data-pp-paso hidden><b>Último paso:</b> después de pagar, envíanos tus datos por WhatsApp para confirmar tu lugar.</p>
+          <a class="btn btn--primary pp-modal__wa" data-pp-wa href="https://wa.me/50492520327" target="_blank" rel="noopener" hidden>Enviar mis datos por WhatsApp →</a>
+        </div>
+
+        <!-- Transferencia: datos bancarios entregados por el servidor + subida de comprobante -->
+        <div data-pp-transf hidden>
+          <p class="panel__small">Haz la transferencia o depósito por <b data-pp-monto></b> a esta cuenta y sube la foto o PDF de tu comprobante. Tu lugar se confirma cuando el equipo verifique el abono en el banco.</p>
+          <dl class="pay pp-modal__banco" data-pp-banco></dl>
+          <p class="panel__small">Escribe como referencia: <b data-pp-ref></b> — y tus datos bancarios también llegaron a tu correo.</p>
+          <div class="field">
+            <label for="pp-archivo">Comprobante de pago *</label>
+            <input id="pp-archivo" data-pp-archivo type="file" accept="image/jpeg,image/png,image/webp,application/pdf" class="insc__file">
+            <small class="insc__hint">JPG, PNG, WebP o PDF, máx. 6 MB. Que se vean monto, fecha y referencia.</small>
+          </div>
+          <button class="btn btn--primary pp-modal__metodo" type="button" data-pp-subir>Enviar comprobante →</button>
+          <p class="panel__small" data-pp-recibido hidden><b>Comprobante recibido.</b> Tu pago queda pendiente hasta que el equipo verifique el abono en el banco; te escribimos cuando se confirme.</p>
+          <button class="insc__back" type="button" data-pp-volver hidden>← Cambiar método de pago</button>
+        </div>
+
         <p class="insc__error" role="alert"></p>
       </dialog>
+
+      <!-- Cupo lleno: lista de espera para el próximo evento -->
+      <form class="insc__view" data-view="espera" hidden>
+        <h3>Cupos <span class="hl">llenos</span> por ahora</h3>
+        <p>STORYCRAFTERS llegó a su capacidad. Déjanos tus datos y te avisamos primero cuando abramos el próximo evento.</p>
+        <div class="insc__grid">
+          <div class="field field--full"><label for="e-nombre">Nombre completo *</label><input id="e-nombre" name="nombre" autocomplete="name" required maxlength="80"></div>
+          <div class="field"><label for="e-correo">Correo *</label><input id="e-correo" name="correo" type="email" autocomplete="email" required></div>
+          <div class="field"><label for="e-whatsapp">WhatsApp *</label><input id="e-whatsapp" name="whatsapp" type="tel" autocomplete="tel" placeholder="+504" required pattern="^\+?[0-9 \(\)\-]{8,20}$"></div>
+        </div>
+        <button class="btn btn--primary insc__submit" type="submit">Avísenme del próximo evento →</button>
+        <p class="insc__error" role="alert"></p>
+      </form>
 
       <!-- Sin backend configurado, cupos llenos o enlace inválido -->
       <div class="insc__view" data-view="aviso" hidden>

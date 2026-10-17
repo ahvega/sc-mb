@@ -2,11 +2,11 @@
 
 El formulario de la landing (`site/js/inscripcion.js`) habla con un script de Google (`backend-inscripciones.gs`) que:
 
-- cobra con **PayPal** (en dólares: US$ 64, 72 u 82 según la fecha; estudiantes US$ 64),
-- guarda cada inscripción en una hoja de Google y envía el correo de confirmación,
+- cobra con **PayPal** (en dólares: US$ 64, 72 u 82 según la fecha; estudiantes US$ 64) o registra el pago por **transferencia bancaria** con foto del comprobante,
+- guarda cada inscripción en una hoja de Google con `Estatus de Pago = Pendiente` y envía los correos,
 - recibe las **fotos de carné** de los estudiantes; Claude aprueba o rechaza los casos claros y el equipo revisa los dudosos.
 
-No hay transferencias bancarias: cada persona hace **un solo pago** en línea.
+**Ningún pago se confirma solo:** una persona autorizada revisa el abono real en PayPal o en el banco y lo aprueba desde el menú **STORYCRAFTERS ▸ Confirmar pago verificado** dentro de la hoja.
 
 ## Cómo funciona la tarifa de estudiante
 
@@ -22,17 +22,29 @@ No hay transferencias bancarias: cada persona hace **un solo pago** en línea.
 
 Sin un carné aprobado no se puede pagar la tarifa de estudiante: el script lo rechaza aunque alguien intente saltarse la página.
 
-## Pago con los botones guardados de PayPal (lo que usa la página hoy)
+## Cómo se confirma un pago (tarjeta o transferencia)
 
-La página cobra con los 3 botones guardados de PayPal (`docs/paypal-botones.md`). Así no necesitas la app de PayPal del paso 1 ni el paso 2.5: basta con instalar el script (pasos 2.1 a 2.4 y 2.7; el 2.6 si quieres revisión de carnés) y pegar la URL `/exec` en `data-apps-script-url` (paso 3).
+1. La persona llena el formulario y sus datos se guardan en **Inscritos** con `Estatus de Pago` = `Pendiente` y un `Registration ID` propio.
+2. Paga con el botón de PayPal de su tarifa, o elige **Transferencia**: la página le muestra los datos bancarios (solo si los configuraste, ver abajo) y le pide la foto del comprobante.
+3. **Tú verificas el dinero de verdad**: entras a PayPal o a la app del banco y compruebas que el abono existe con el monto y la moneda correctos. La foto del comprobante **no prueba** que el dinero llegó.
+4. En la hoja **Inscritos**, selecciona la fila de esa persona y usa el menú **STORYCRAFTERS ▸ Confirmar pago verificado**. Marca la casilla de que verificaste el abono, escribe la referencia (transacción PayPal o referencia bancaria), monto y moneda. El sistema audita quién confirmó y cuándo.
+5. Al confirmar, `Estatus de Pago` pasa a `Completado`, el lugar queda ocupado y sale la **bienvenida** por correo. El WhatsApp de bienvenida queda como tarea `manual` en la pestaña **Notificaciones** (no hay envío automático).
 
-1. La persona llena el formulario. Antes de abrir la ventana de pago, sus datos se guardan en la pestaña **Inscritos** con **Referencia de pago** = `PENDIENTE`.
-2. Paga en la ventana con el botón de su tarifa. PayPal les manda el recibo a ella y a ti, pero **no le avisa a la hoja**.
-3. Cuando veas el pago en PayPal, busca a esa persona en **Inscritos** (por nombre o correo) y cambia `PENDIENTE` por el **número de transacción** de PayPal. En ese momento le llega sola su **correo de bienvenida** personalizado y **Correo enviado** pasa a `Sí`.
+⚠️ **Escribir la referencia a mano en la celda ya no confirma nada**: queda marcado como "Edición manual sin verificación" en `Estado de gestión` y se registra en **Auditoría**. La misma referencia no puede usarse para dos personas.
 
-Correos automáticos: al guardar sus datos, la persona recibe "Recibimos tus datos" con su tarifa y monto (uno por correo mientras siga pendiente; **Correo enviado** = `Datos recibidos`), y al verificar el pago, la bienvenida.
+Las filas `Pendiente` no ocupan cupo ni salen en **Gafetes**. Si alguien se inscribe dos veces, verás dos filas pendientes con su correo: deja la que coincida con el pago y borra la otra.
 
-Las filas `PENDIENTE` no ocupan cupo ni salen en **Gafetes**; en **Control**, la fila **Pagos por verificar en PayPal** dice cuántas hay. Si alguien lo intenta dos veces, verás dos filas pendientes con su correo: deja la que coincida con el pago y borra la otra.
+## Configurar operadores y transferencias
+
+El script debe estar **vinculado a la hoja** para que el menú aparezca: abre la hoja de inscritos → **Extensiones → Apps Script** → pega ahí el código (o migra el proyecto existente). Conserva la propiedad `HOJA_ID`.
+
+En **Propiedades del script** (⚙️ Configuración del proyecto → Propiedades del script):
+
+- `OPERADORES`: correos Google de quienes pueden confirmar pagos, separados por coma (ej. `tu-correo@gmail.com,otro@themediabuilders.com`). Sin esto, nadie puede confirmar.
+- `TRANSFERENCIAS_HABILITADAS`: escribe `si` para activar la opción en la página.
+- `BANCO_NOMBRE`, `BANCO_TITULAR`, `BANCO_TIPO`, `BANCO_CUENTA`: los datos que el participante verá. **Nunca los pongas en el código ni en el repo.** Para pruebas usa la cuenta temporal solo en el despliegue de pruebas, jamás en producción.
+
+Cuando el cupo se llena, la página cambia sola a la **lista de espera** (nombre, correo y WhatsApp en la pestaña "Lista de espera") para avisar del próximo evento.
 
 ## Instalación (una sola vez)
 

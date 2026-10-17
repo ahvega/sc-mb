@@ -13,7 +13,6 @@
   if (!root) return;
 
   var API = root.dataset.appsScriptUrl;
-  var PAYPAL_ID = root.dataset.paypalClientId;
   var local = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
   // Botones guardados en PayPal: { idTarifa: Id. hospedado }. Con ellos el pago se abre en una ventana.
   var BOTONES = null;
@@ -32,6 +31,7 @@
 
   var form = root.querySelector('[data-view="datos"]');
   var datos = {}, tarifa = null, codigo = null, enviando = false;
+  var regId = null, idem = null; // registro del backend y clave de idempotencia del envío actual
 
   var q = function (sel) { return root.querySelector(sel); };
   var qa = function (sel) { return Array.prototype.slice.call(root.querySelectorAll(sel)); };
@@ -119,6 +119,7 @@
     ['nombre', 'correo', 'whatsapp', 'ciudad', 'ocupacion', 'experiencia', 'talla', 'comoSeEntero', 'restricciones']
       .forEach(function (k) { datos[k] = form.elements[k].value.trim(); });
     datos.comunicaciones = form.elements.comunicaciones.checked;
+    idem = null; // envío nuevo: nueva clave de idempotencia
 
     if (esEstudiante()) {
       if (!API && !demo) return error('La inscripción de estudiantes abre muy pronto. Escríbenos a info@themediabuilders.com.');
@@ -216,9 +217,7 @@
     api('GET')
       .then(function (res) {
         ocupado(false);
-        if (res.cuposDisponibles <= 0) {
-          return aviso('Los cupos de STORYCRAFTERS se llenaron. Escríbenos a <a href="mailto:info@themediabuilders.com">info@themediabuilders.com</a> para la lista de espera.');
-        }
+        if (res.cuposDisponibles <= 0) return ver('espera');
         var t = res.tarifas.filter(function (x) { return x.disponible && !x.carne; })[0];
         if (!t) return aviso('Las inscripciones están cerradas.');
         mostrarPago(t);
@@ -228,7 +227,7 @@
 
   function mostrarPago(t) {
     tarifa = t;
-    if (conBotones) return preinscribir();
+    if (API || conBotones) return preinscribir();
     pintarResumen(q('[data-summary]'));
     q('[data-back]').hidden = !!codigo;
     ver('pago');
@@ -261,57 +260,237 @@
   var nVentana = 0;
 
   // Con backend, guarda los datos en la hoja (pago PENDIENTE) antes de abrir la ventana.
-  // Si falla, la ventana se abre igual: el botón de WhatsApp lleva los datos.
+  // Si falla o no contesta, NO se abre el cobro: un pago sin registro no se puede conciliar.
+  // En un timeout se reintenta UNA vez con la misma clave de idempotencia: el servidor devuelve
+  // el registro ya creado en vez de duplicarlo.
   var datosGuardados = false;
   function preinscribir() {
     datosGuardados = false;
+    regId = null;
     if (!API) return abrirVentanaPago();
+    if (!idem) idem = (crypto.randomUUID ? crypto.randomUUID() : 'i' + Date.now() + '-' + Math.random().toString(36).slice(2));
     ocupado(true, 'Guardando tus datos…');
-    // Máximo 20 s (el script de Google puede tardar al despertar): si tarda más, se abre el pago igual
-    var espera = new Promise(function (ok) { setTimeout(ok, 20000); });
-    Promise.race([api('POST', { accion: 'preinscripcion', tarifa: tarifa.id, datos: datos, codigo: codigo }), espera])
-      .then(function (res) { datosGuardados = !!(res && res.ok); })
-      .catch(function () {})
-      .then(function () { ocupado(false); abrirVentanaPago(); });
+    var cuerpo = { accion: 'preinscripcion', tarifa: tarifa.id, datos: datos, codigo: codigo, idempotencia: idem };
+    var espera = new Promise(function (ok) { setTimeout(function () { ok('timeout'); }, 20000); });
+    Promise.race([api('POST', cuerpo), espera])
+      .then(function (res) {
+        // Reintento único con la MISMA clave, con su propio límite: no deja el botón colgado
+        if (res === 'timeout') {
+          var espera2 = new Promise(function (ok) { setTimeout(function () { ok(null); }, 20000); });
+          return Promise.race([api('POST', cuerpo).catch(function () { return null; }), espera2]);
+        }
+        return res;
+      })
+      .then(function (res) {
+        ocupado(false);
+        if (res && res.ok && res.registrationId) {
+          datosGuardados = true;
+          regId = res.registrationId;
+          return abrirVentanaPago();
+        }
+        error((res && res.error) || 'No pudimos guardar tus datos. No se realizó ningún cobro; intenta de nuevo en unos minutos.');
+      })
+      .catch(function () {
+        ocupado(false);
+        error('No pudimos guardar tus datos. No se realizó ningún cobro; intenta de nuevo en unos minutos.');
+      });
+  }
+
+  var contBoton = ventana.querySelector('[data-pp-boton]');
+  var tokenComprobante = null;
+
+  function vistaVentana(nombre) {
+    ['metodos', 'tarjeta', 'transf'].forEach(function (v) {
+      ventana.querySelector('[data-pp-' + v + ']').hidden = v !== nombre;
+    });
+    ventana.querySelector('.insc__error').textContent = '';
   }
 
   function abrirVentanaPago() {
     var id = BOTONES[tarifa.id];
     if (!id) return error('No encontramos el botón de pago para la tarifa ' + tarifa.nombre + '. Escríbenos a info@themediabuilders.com.');
     pintarResumen(ventana.querySelector('[data-pp-resumen]'));
-    // Si los datos ya están en la hoja, no hace falta mandarlos por WhatsApp
-    ventana.querySelector('[data-pp-paso]').hidden = datosGuardados;
-    ventana.querySelector('[data-pp-wa]').hidden = datosGuardados;
-    // El botón guardado no recibe los datos: si no se guardaron, que el participante nos los envíe ya escritos
-    ventana.querySelector('[data-pp-wa]').href = 'https://wa.me/50492520327?text=' + encodeURIComponent([
-      'Hola, ya pagué mi inscripción a STORYCRAFTERS (' + tarifa.nombre + ', ' + dolares(tarifa.usd) + '). Mis datos:',
-      'Nombre: ' + datos.nombre,
-      'Correo: ' + datos.correo,
-      'WhatsApp: ' + datos.whatsapp,
-      'Ciudad: ' + datos.ciudad,
-      'Ocupación: ' + datos.ocupacion,
-      'Experiencia: ' + datos.experiencia,
-      'Talla de camiseta: ' + datos.talla,
-      'Restricciones alimentarias: ' + (datos.restricciones || 'ninguna'),
-      'Cómo se enteró: ' + (datos.comoSeEntero || '-'),
-      'Acepta comunicaciones: ' + (datos.comunicaciones ? 'sí' : 'no')
-    ].join('\n'));
-    var cont = ventana.querySelector('[data-pp-boton]');
-    var aviso = ventana.querySelector('.insc__error');
-    aviso.textContent = '';
-    cont.innerHTML = '';
     var esta = ++nVentana;
-    cont.id = 'paypal-container-' + id + '-' + esta;
+    contBoton.innerHTML = '';
+    var btnSubir = ventana.querySelector('[data-pp-subir]');
+    btnSubir.hidden = false;
+    btnSubir.disabled = false;
+    btnSubir.textContent = 'Enviar comprobante →';
+    ventana.querySelector('[data-pp-archivo]').disabled = false;
+    ventana.querySelector('[data-pp-archivo]').value = '';
+    ventana.querySelector('[data-pp-volver]').hidden = true;
     if (ventana.showModal) ventana.showModal(); else ventana.setAttribute('open', '');
-    cargarSdk('https://www.paypal.com/sdk/js?client-id=' + encodeURIComponent(BOTONES_CLIENT) +
-      '&components=hosted-buttons&disable-funding=venmo&currency=USD')
-      .then(function (paypal) {
-        // Si la ventana se cerró y se volvió a abrir mientras cargaba PayPal, solo pinta la última
-        if (esta !== nVentana) return;
-        return paypal.HostedButtons({ hostedButtonId: id }).render('#' + cont.id);
-      })
-      .catch(function () { if (esta === nVentana) aviso.textContent = 'No pudimos cargar PayPal. Recarga la página e intenta de nuevo.'; });
+    if (regId) {
+      vistaVentana('metodos'); // con registro guardado: elegir tarjeta o transferencia
+    } else {
+      // Modo solo-botones (sin backend): el botón guardado no recibe los datos,
+      // así que el participante los envía por WhatsApp con el texto ya escrito.
+      ventana.querySelector('[data-pp-paso]').hidden = false;
+      var wa = ventana.querySelector('[data-pp-wa]');
+      wa.hidden = false;
+      wa.href = 'https://wa.me/50492520327?text=' + encodeURIComponent([
+        'Hola, ya pagué mi inscripción a STORYCRAFTERS (' + tarifa.nombre + ', ' + dolares(tarifa.usd) + '). Mis datos:',
+        'Nombre: ' + datos.nombre,
+        'Correo: ' + datos.correo,
+        'WhatsApp: ' + datos.whatsapp,
+        'Ciudad: ' + datos.ciudad,
+        'Ocupación: ' + datos.ocupacion,
+        'Experiencia: ' + datos.experiencia,
+        'Talla de camiseta: ' + datos.talla,
+        'Restricciones alimentarias: ' + (datos.restricciones || 'ninguna'),
+        'Cómo se enteró: ' + (datos.comoSeEntero || '-'),
+        'Acepta comunicaciones: ' + (datos.comunicaciones ? 'sí' : 'no')
+      ].join('\n'));
+      vistaVentana('tarjeta');
+      montarBotonTarjeta(esta);
+    }
   }
+
+  // El intento queda registrado ANTES de exponer el botón (R2): si PayPal cobra y la página
+  // no se entera, el registro queda trazable para la conciliación manual del equipo.
+  function montarBotonTarjeta(esta) {
+    var aviso = ventana.querySelector('.insc__error');
+    var listo = regId
+      ? api('POST', { accion: 'iniciarPago', registrationId: regId, metodo: 'paypal' }).catch(function () { return null; })
+      : Promise.resolve({ ok: true });
+    listo.then(function (res) {
+      if (esta !== nVentana) return;
+      if (!res || !res.ok) {
+        aviso.textContent = (res && res.error) || 'No pudimos preparar el pago. Intenta de nuevo o escríbenos a info@themediabuilders.com.';
+        return;
+      }
+      var id = BOTONES[tarifa.id];
+      contBoton.id = 'paypal-container-' + id + '-' + esta;
+      cargarSdk('https://www.paypal.com/sdk/js?client-id=' + encodeURIComponent(BOTONES_CLIENT) +
+        '&components=hosted-buttons&disable-funding=venmo&currency=USD')
+        .then(function (paypal) {
+          if (esta !== nVentana) return;
+          return paypal.HostedButtons({ hostedButtonId: id }).render('#' + contBoton.id);
+        })
+        .catch(function () { if (esta === nVentana) aviso.textContent = 'No pudimos cargar PayPal. Recarga la página e intenta de nuevo.'; });
+    });
+  }
+
+  // Transferencia: el servidor entrega los datos bancarios (nunca van en el HTML) y un
+  // token de un solo uso para subir el comprobante.
+  function mostrarTransferencia(esta) {
+    var aviso = ventana.querySelector('.insc__error');
+    var v = ventana.querySelector('[data-pp-transf]');
+    api('POST', { accion: 'iniciarPago', registrationId: regId, metodo: 'transferencia' })
+      .then(function (res) {
+        if (esta !== nVentana) return;
+        if (!res || !res.ok) {
+          aviso.textContent = (res && res.transferenciaDisponible === false)
+            ? 'El pago por transferencia no está disponible ahora. Elige tarjeta o escríbenos al +504 9252-0327.'
+            : (res && res.error) || 'No pudimos preparar la transferencia. Intenta de nuevo.';
+          v.querySelector('[data-pp-volver]').hidden = false; // camino de regreso al selector
+          return;
+        }
+        tokenComprobante = res.token;
+        var banco = v.querySelector('[data-pp-banco]');
+        banco.textContent = '';
+        [['Banco', res.banco.banco], ['Titular', res.banco.titular], ['Tipo de cuenta', res.banco.tipo],
+         ['Número de cuenta', res.banco.cuenta], ['Monto exacto', 'L ' + Number(res.monto).toLocaleString('es-HN') + ' ' + res.moneda]]
+          .forEach(function (par) {
+            var dt = document.createElement('dt'); dt.textContent = par[0];
+            var dd = document.createElement('dd'); dd.textContent = par[1];
+            banco.appendChild(dt); banco.appendChild(dd);
+          });
+        v.querySelector('[data-pp-monto]').textContent = 'L ' + Number(res.monto).toLocaleString('es-HN');
+        v.querySelector('[data-pp-ref]').textContent = res.referencia;
+        v.querySelector('[data-pp-recibido]').hidden = res.comprobante !== 'recibido';
+        v.querySelector('[data-pp-volver]').hidden = false;
+        vistaVentana('transf');
+      })
+      .catch(function () {
+        if (esta !== nVentana) return;
+        aviso.textContent = 'Sin conexión. Intenta de nuevo en unos minutos.';
+      });
+  }
+
+  function subirComprobante(esta) {
+    var aviso = ventana.querySelector('.insc__error');
+    var input = ventana.querySelector('[data-pp-archivo]');
+    var archivo = input.files && input.files[0];
+    if (!archivo) { aviso.textContent = 'Elige la foto o PDF de tu comprobante.'; return; }
+    if (archivo.size > 6 * 1024 * 1024) { aviso.textContent = 'El archivo pasa de 6 MB. Sube una foto más liviana o un PDF.'; return; }
+    aviso.textContent = '';
+    var btn = ventana.querySelector('[data-pp-subir]');
+    btn.disabled = true;
+    btn.textContent = 'Subiendo comprobante…';
+    var lector = new FileReader();
+    lector.onload = function () {
+      var base64 = String(lector.result).split(',')[1] || '';
+      api('POST', {
+        accion: 'subirComprobante', registrationId: regId, token: tokenComprobante,
+        archivo: { nombre: archivo.name, tipo: archivo.type || 'application/octet-stream', base64: base64 },
+      })
+        .then(function (res) {
+          if (esta !== nVentana) return;
+          if (res && res.ok) {
+            ventana.querySelector('[data-pp-recibido]').hidden = false;
+            btn.hidden = true;
+            input.disabled = true;
+            return;
+          }
+          aviso.textContent = (res && res.error) || 'No pudimos recibir tu comprobante. Intenta de nuevo.';
+        })
+        .catch(function () {
+          if (esta === nVentana) aviso.textContent = 'Sin conexión. El comprobante no llegó; intenta de nuevo.';
+        })
+        .then(function () {
+          if (esta !== nVentana) return;
+          btn.disabled = false;
+          btn.textContent = 'Enviar comprobante →';
+        });
+    };
+    lector.readAsDataURL(archivo);
+  }
+
+  ventana.querySelector('[data-pp-elige="tarjeta"]').addEventListener('click', function () {
+    vistaVentana('tarjeta');
+    montarBotonTarjeta(nVentana);
+  });
+  ventana.querySelector('[data-pp-elige="transferencia"]').addEventListener('click', function () {
+    var dl = ventana.querySelector('[data-pp-banco]');
+    dl.textContent = '';
+    var dd = document.createElement('dd');
+    dd.textContent = 'Cargando los datos de la cuenta…';
+    dl.appendChild(dd);
+    vistaVentana('transf');
+    mostrarTransferencia(nVentana);
+  });
+  ventana.querySelector('[data-pp-subir]').addEventListener('click', function () { subirComprobante(nVentana); });
+  ventana.querySelector('[data-pp-volver]').addEventListener('click', function () { vistaVentana('metodos'); });
+
+  // Cupo lleno → lista de espera (nombre, correo, WhatsApp para el próximo evento)
+  var formEspera = q('[data-view="espera"]');
+  formEspera.addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (enviando || !formEspera.reportValidity()) return;
+    var btn = formEspera.querySelector('.insc__submit');
+    btn.disabled = true;
+    api('POST', {
+      accion: 'listaEspera',
+      nombre: formEspera.elements.nombre.value.trim(),
+      correo: formEspera.elements.correo.value.trim(),
+      whatsapp: formEspera.elements.whatsapp.value.trim(),
+    })
+      .then(function (res) {
+        btn.disabled = false;
+        if (res && res.ok) {
+          formEspera.innerHTML = '<h3>Listo, <span class="hl">te avisamos</span></h3>' +
+            '<p>Quedaste en la lista de espera de STORYCRAFTERS. Te escribimos al correo y WhatsApp que nos dejaste apenas abramos el próximo evento.</p>';
+          return;
+        }
+        formEspera.querySelector('.insc__error').textContent =
+          (res && res.error) || 'No pudimos guardar tus datos. Intenta de nuevo.';
+      })
+      .catch(function () {
+        btn.disabled = false;
+        formEspera.querySelector('.insc__error').textContent = 'Sin conexión. Intenta de nuevo en unos minutos.';
+      });
+  });
 
   function cerrarVentana() {
     if (ventana.close) ventana.close(); else ventana.removeAttribute('open');
@@ -325,42 +504,18 @@
     if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) cerrarVentana();
   });
 
+  // La ruta vieja de PayPal (botones JS que cobraban antes de guardar) se retiró en #20:
+  // solo queda el botón de demo local. En producción sin backend no se cobra.
   function pintarBotonPago() {
     var cont = q('[data-paypal]');
     cont.innerHTML = '';
-    if (demo || !PAYPAL_ID) {
-      // Sin PayPal configurado: en local se simula; en producción no se cobra.
-      if (!demo) return error('El pago en línea aún no está habilitado.');
-      var b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'btn btn--primary insc__submit';
-      b.textContent = 'Pagar ' + dolares(tarifa.usd) + ' (demo, sin cobro) →';
-      b.addEventListener('click', function () { confirmar({ pasarela: 'demo', referencia: 'DEMO-' + Date.now() }); });
-      return cont.appendChild(b);
-    }
-    cargarPayPal().then(function (paypal) {
-      paypal.Buttons({
-        style: { layout: 'vertical', color: 'gold', shape: 'rect', label: 'pay', height: 48 },
-        createOrder: function (data, actions) {
-          return actions.order.create({
-            intent: 'CAPTURE',
-            purchase_units: [{
-              description: 'STORYCRAFTERS · ' + tarifa.nombre + ' · ' + datos.nombre.slice(0, 60),
-              amount: { currency_code: 'USD', value: String(tarifa.usd) },
-            }],
-            application_context: { shipping_preference: 'NO_SHIPPING', brand_name: 'STORYCRAFTERS' },
-          });
-        },
-        // El backend verifica el monto, captura el cobro, guarda y envía el correo.
-        onApprove: function (data) { return confirmar({ pasarela: 'paypal', referencia: data.orderID }); },
-        onError: function () { error('PayPal no pudo procesar el pago. No se realizó ningún cobro; intenta de nuevo.'); },
-      }).render(cont);
-    }).catch(function () { error('No pudimos cargar PayPal. Recarga la página e intenta de nuevo.'); });
-  }
-
-  function cargarPayPal() {
-    return cargarSdk('https://www.paypal.com/sdk/js?client-id=' + encodeURIComponent(PAYPAL_ID) +
-      '&currency=USD&intent=capture&components=buttons&locale=es_XC');
+    if (!demo) return error('El pago en línea aún no está habilitado.');
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'btn btn--primary insc__submit';
+    b.textContent = 'Pagar ' + dolares(tarifa.usd) + ' (demo, sin cobro) →';
+    b.addEventListener('click', function () { confirmar({ pasarela: 'demo', referencia: 'DEMO-' + Date.now() }); });
+    return cont.appendChild(b);
   }
 
   var paypalCargado = null;

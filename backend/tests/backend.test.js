@@ -79,54 +79,35 @@ test('limpio defiende la hoja contra valores que empiezan como fórmula', () => 
   assert.equal(h.getRange(2, env.colIndex('Inscritos', 'Nombre (diploma y gafete)')).getValue(), "'=1+1");
 });
 
-// ---------- doPost (pago confirmado por pasarela) ----------
+// ---------- doPost: la ruta legacy de cobro directo se retiró (#20) ----------
 
-test('doPost con pasarela prueba guarda el inscrito, envía bienvenida y es idempotente', () => {
+test('doPost sin acción reconocida no cobra ni registra (ruta legacy retirada)', () => {
   const env = crearEntorno();
-  const body = { pago: { pasarela: 'prueba', referencia: 'ORD-1' }, tarifa: 'preventa', datos: DATOS };
-
-  const r1 = post(env, body);
-  assert.equal(r1.ok, true);
-  const h = env.hoja('Inscritos');
-  assert.equal(h.getLastRow(), 2);
-  assert.equal(h.getRange(2, env.colIndex('Inscritos', 'Referencia de pago')).getValue(), 'ORD-1');
-  assert.equal(env.correos.length, 1);
-  assert.match(env.correos[0].subject, /confirmado/);
-
-  // Reintento con la misma referencia: no duplica fila ni correo
-  const r2 = post(env, body);
-  assert.equal(r2.ok, true);
-  assert.equal(r2.repetido, true);
-  assert.equal(h.getLastRow(), 2);
-  assert.equal(env.correos.length, 1);
-});
-
-test('doPost rechaza pasarela desconocida o pago sin referencia', () => {
-  const env = crearEntorno();
-  const res = post(env, { pago: { pasarela: 'inexistente', referencia: 'X' }, tarifa: 'preventa', datos: DATOS });
+  const res = post(env, { pago: { pasarela: 'prueba', referencia: 'ORD-1' }, tarifa: 'preventa', datos: DATOS });
   assert.equal(res.ok, false);
   assert.equal(env.hoja('Inscritos').getLastRow(), 1);
+  assert.equal(env.correos.length, 0);
 });
 
-// ---------- Verificación manual: el operador escribe la referencia ----------
+// ---------- Edición manual de la celda ya no aprueba ni envía bienvenida ----------
 
-test('escribir la transacción en "Referencia de pago" dispara la bienvenida una sola vez', () => {
+test('escribir la transacción a mano queda marcado como edición sin verificación, sin bienvenida', () => {
   const env = crearEntorno();
   env.ctx.preinscripcion({ accion: 'preinscripcion', tarifa: 'preventa', datos: DATOS });
   assert.equal(env.correos.length, 1); // correo "datos recibidos"
 
   const h = env.hoja('Inscritos');
   const cRef = env.colIndex('Inscritos', 'Referencia de pago');
-  h.getRange(2, cRef).setValue('PAYPAL-9X8'); // el operador vio el cobro en PayPal
+  h.getRange(2, cRef).setValue('PAYPAL-9X8'); // operador escribe la celda, como antes
   env.ctx.alEditarHoja(env.edicion(h, 2, cRef));
 
-  assert.equal(env.correos.length, 2);
-  assert.match(env.correos[1].subject, /confirmado/);
-
-  // Corregir la referencia a mano no debe reenviar la bienvenida
-  h.getRange(2, cRef).setValue('PAYPAL-9X8-CORREGIDO');
-  env.ctx.alEditarHoja(env.edicion(h, 2, cRef));
-  assert.equal(env.correos.length, 2);
+  // No hay bienvenida: el pago sigue Pendiente hasta confirmarlo desde el menú
+  assert.equal(env.correos.length, 1);
+  assert.match(String(h.getRange(2, env.colIndex('Inscritos', 'Estado de gestión')).getValue()), /sin verificación/);
+  assert.equal(h.getRange(2, env.colIndex('Inscritos', 'Estatus de Pago')).getValue(), 'Pendiente');
+  // La edición quedó auditada
+  const aud = env.hoja('Auditoría');
+  assert.ok(aud.getLastRow() >= 2);
 });
 
 test('editar otra columna no dispara correos', () => {
