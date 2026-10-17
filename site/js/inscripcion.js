@@ -312,9 +312,13 @@
     pintarResumen(ventana.querySelector('[data-pp-resumen]'));
     var esta = ++nVentana;
     contBoton.innerHTML = '';
-    ventana.querySelector('[data-pp-subir]').hidden = false;
+    var btnSubir = ventana.querySelector('[data-pp-subir]');
+    btnSubir.hidden = false;
+    btnSubir.disabled = false;
+    btnSubir.textContent = 'Enviar comprobante →';
     ventana.querySelector('[data-pp-archivo]').disabled = false;
     ventana.querySelector('[data-pp-archivo]').value = '';
+    ventana.querySelector('[data-pp-volver]').hidden = true;
     if (ventana.showModal) ventana.showModal(); else ventana.setAttribute('open', '');
     if (regId) {
       vistaVentana('metodos'); // con registro guardado: elegir tarjeta o transferencia
@@ -379,6 +383,7 @@
           aviso.textContent = (res && res.transferenciaDisponible === false)
             ? 'El pago por transferencia no está disponible ahora. Elige tarjeta o escríbenos al +504 9252-0327.'
             : (res && res.error) || 'No pudimos preparar la transferencia. Intenta de nuevo.';
+          v.querySelector('[data-pp-volver]').hidden = false; // camino de regreso al selector
           return;
         }
         tokenComprobante = res.token;

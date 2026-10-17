@@ -1019,9 +1019,14 @@ function procesarNotificaciones() {
     for (let i = 0; i < vs.length; i++) {
       const estado = String(vs[i][4]);
       const intentos = Number(vs[i][5]) || 0;
-      // 'sending' con reclamo de hace >10 min: la ejecución murió antes del resultado → se reintenta
-      const reclamoViejo = estado === 'sending' && (new Date() - new Date(vs[i][7]).getTime()) > 10 * 60 * 1000;
-      if ((estado !== 'queued' && estado !== 'failed' && !reclamoViejo) || String(vs[i][2]) !== 'email' || intentos >= NOTIF_MAX_INTENTOS) continue;
+      // 'sending' con reclamo de hace >10 min: la ejecución murió antes del resultado.
+      // El correo pudo haber salido igual → NO se reintenta: pasa a revisión humana.
+      if (estado === 'sending' && (new Date() - new Date(vs[i][7]).getTime()) > 10 * 60 * 1000) {
+        h.getRange(i + 2, 5).setValue('delivery_unknown');
+        h.getRange(i + 2, 9).setValue('Interrumpido durante el envío — verificar si llegó antes de reenviar');
+        continue;
+      }
+      if ((estado !== 'queued' && estado !== 'failed') || String(vs[i][2]) !== 'email' || intentos >= NOTIF_MAX_INTENTOS) continue;
       const fila = i + 2;
       const regId = String(vs[i][1]);
       const plantilla = String(vs[i][3]);
