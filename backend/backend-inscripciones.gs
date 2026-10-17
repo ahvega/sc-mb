@@ -361,7 +361,6 @@ function preinscripcion(body) {
 
   const lock = LockService.getScriptLock();
   lock.waitLock(25000);
-  let avisar = false;
   let registrationId = null;
   try {
     asegurarEsquema();
@@ -382,8 +381,6 @@ function preinscripcion(body) {
       return json({ ok: false, error: 'Ya recibimos varias solicitudes con este correo hoy. Escríbenos al ' + WHATSAPP_EQUIPO + '.' });
     }
 
-    // Un solo correo de "datos recibidos" por dirección mientras siga pendiente (la página es pública)
-    avisar = !tienePendiente(hoja, correo);
     registrationId = Utilities.getUuid();
     const registro = {};
     registro['Fecha de pago'] = new Date();
@@ -403,7 +400,7 @@ function preinscripcion(body) {
     registro['Moneda'] = 'USD';
     registro['Pasarela'] = '';
     registro['Referencia de pago'] = PAGO_PENDIENTE;
-    registro['Correo enviado'] = avisar ? 'Datos recibidos' : 'No (repetido)';
+    registro['Correo enviado'] = 'No';
     registro['Carné verificado'] = !!solicitud;
     registro['Notas'] = 'Pago pendiente de verificación. Confirmar SOLO desde el menú STORYCRAFTERS ▸ Confirmar pago verificado.';
     registro['Registration ID'] = registrationId;
@@ -424,20 +421,8 @@ function preinscripcion(body) {
     lock.releaseLock();
   }
 
-  if (avisar) {
-    try {
-      const saludo = limpio(datos.nombre).split(' ')[0] || 'storycrafter';
-      enviarCorreoSimple(limpio(datos.correo), '¡Hola ' + saludo + '! Recibimos tus datos para STORYCRAFTERS',
-        'Recibimos tus <span>datos</span>',
-        ['¡Hola, ' + saludo + '! Ya tenemos tus datos para la masterclass STORYCRAFTERS (' + EVENTO.fecha + ').',
-         'Para asegurar tu lugar, completa tu pago de USD ' + t.usd + ' (tarifa ' + t.nombre + ') en la ventana de PayPal de la página.',
-         'Si ya pagaste con PayPal o con tarjeta, no tienes que hacer nada más: el correo de bienvenida te llega solo en unos minutos. ' +
-           '¿Dudas? Responde este correo o escríbenos al ' + WHATSAPP_EQUIPO + '.'],
-        { texto: 'Ir a la inscripción', url: LANDING_URL + '#inscripcion' });
-    } catch (err) {
-      console.error('Correo de datos recibidos no enviado: ' + err);
-    }
-  }
+  // Sin correo al preinscribir: quien paga con PayPal recibe solo la bienvenida, y quien elige
+  // transferencia recibe sus datos bancarios (instrucciones-transferencia-v1) al elegir ese método.
   return json({ ok: true, registrationId: registrationId });
 }
 
@@ -1814,7 +1799,8 @@ function enviarConfirmacion(r) {
     '<h1 style="margin:0;font-family:' + F.display + ';font-size:44px;line-height:1.02;font-weight:500;letter-spacing:1px;text-transform:uppercase;color:' + C.hueso + ';">' +
     '¡' + nombreHtml + ', tu lugar en <span style="color:' + C.ambar + ';">STORYCRAFTERS</span> está confirmado!</h1></td></tr>' +
     '<tr><td>' +
-    parrafo('¡Qué alegría tenerte con nosotros, ' + nombreHtml + '! Recibimos tu pago y ya eres parte de la primera edición. ' +
+    parrafo((/transfer/i.test(r.metodo || '') ? 'Tu transferencia está confirmada. ' : 'Tu pago está confirmado. ') +
+      '¡Qué alegría tenerte con nosotros, ' + nombreHtml + '! Ya estás inscrito en la primera edición de STORYCRAFTERS. ' +
       'Vamos a investigar, estructurar y grabar juntos, con cámara en mano y luces encendidas.') +
     '</td></tr>' +
     '<tr><td style="padding:8px 0 32px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid ' + C.linea + ';">' +
