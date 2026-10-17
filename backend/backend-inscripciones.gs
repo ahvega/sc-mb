@@ -528,7 +528,7 @@ function cerrarIntento(regId, estado, evidencia, operador) {
 
 /** SHA-256 del token de subida, en base64: en la hoja nunca queda el token en claro. */
 function hashToken(token) {
-  return Utilities.base64Encode(Utilities.computeDigest(Utilities.DigestType.SHA_256, String(token), Utilities.Charset.UTF_8));
+  return Utilities.base64Encode(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, String(token), Utilities.Charset.UTF_8));
 }
 
 /** Datos bancarios autorizados (Script Properties). Solo existen si el dueño habilitó transferencias. */
@@ -1072,7 +1072,7 @@ function enviarNotificacion(regId, plantilla, datos) {
 
   if (plantilla === 'comprobante-equipo-v1') {
     const blob = DriveApp.getFileById(datos.archivoId).getBlob();
-    MailApp.sendEmail({
+    enviarCorreo({
       to: CORREO_EVENTO,
       subject: 'Comprobante recibido — verificar abono · ' + nombre,
       name: REMITENTE,
@@ -1259,10 +1259,10 @@ function solicitudEstudiante(body) {
          'Vamos a revisar tu carné y te escribiremos a este correo. Si lo aprobamos, te llegará un enlace personal para pagar USD ' +
          t.usd + ' y confirmar tu lugar.',
          'Tu lugar todavía no está reservado: se confirma cuando pagas.']);
-      MailApp.sendEmail(CORREO_EVENTO, 'Nueva solicitud de estudiante: ' + limpio(datos.nombre),
-        'Revisa el carné y cambia el Estado en la pestaña Estudiantes.\n' +
+      enviarCorreo({ to: CORREO_EVENTO, subject: 'Nueva solicitud de estudiante: ' + limpio(datos.nombre),
+        body: 'Revisa el carné y cambia el Estado en la pestaña Estudiantes.\n' +
         (decision.nota ? 'Revisión de Claude: ' + decision.nota + '\n' : '') +
-        SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('HOJA_ID')).getUrl());
+        SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('HOJA_ID')).getUrl() });
     } catch (err) {
       console.error('Correo de solicitud no enviado: ' + err);
     }
@@ -1455,6 +1455,24 @@ function buscarSolicitud(codigo) {
   return null;
 }
 
+/**
+ * Envía desde CORREO_EVENTO cuando la cuenta dueña del script lo tiene verificado en Gmail como
+ * "Enviar correo como" (sale por el SMTP de ese buzón). Si no, usa MailApp desde la cuenta dueña.
+ * Recibe el mismo objeto que MailApp.sendEmail({ to, subject, body?, htmlBody?, name?, replyTo?, attachments? }).
+ */
+function enviarCorreo(o) {
+  let alias = false;
+  try {
+    alias = GmailApp.getAliases().indexOf(CORREO_EVENTO) >= 0;
+  } catch (err) {
+    console.error('No se pudo leer los alias de Gmail: ' + err);
+  }
+  if (!alias) return MailApp.sendEmail(o);
+  const opciones = { from: CORREO_EVENTO };
+  ['htmlBody', 'name', 'replyTo', 'attachments'].forEach(function (k) { if (o[k]) opciones[k] = o[k]; });
+  GmailApp.sendEmail(o.to, o.subject, o.body || '', opciones);
+}
+
 /** Correo corto con el estilo de la landing. En el título, <span> marca la palabra en ámbar. */
 function enviarCorreoSimple(para, asunto, titulo, parrafos, boton) {
   const C = { negro: '#0A0A0A', linea: '#2A2A2A', hueso: '#EDE8DF', gris: '#9A968F', ambar: '#E8B654' };
@@ -1482,7 +1500,7 @@ function enviarCorreoSimple(para, asunto, titulo, parrafos, boton) {
     '<p style="margin:16px 0 0;font-family:' + mono + ';font-size:11px;letter-spacing:2px;color:' + C.gris + ';">' +
     'INVESTIGA · ESTRUCTURA · GRABA<br>STORYCRAFTERS · MEDIA BUILDERS · SC.THEMEDIABUILDERS.COM</p></td></tr>' +
     '</table></td></tr></table></div>';
-  MailApp.sendEmail({ to: para, subject: asunto, htmlBody: html, name: REMITENTE, replyTo: CORREO_EVENTO });
+  enviarCorreo({ to: para, subject: asunto, htmlBody: html, name: REMITENTE, replyTo: CORREO_EVENTO });
 }
 
 // ---------- PayPal API (uso administrativo: consultar una transacción desde el menú) ----------
@@ -1638,7 +1656,7 @@ function enviarConfirmacion(r) {
     '</td></tr>' +
     '</table></td></tr></table></div>';
 
-  MailApp.sendEmail({
+  enviarCorreo({
     to: r.correo,
     subject: (r.prueba ? '[PRUEBA] ' : '') + '¡' + saludo + ', tu lugar en STORYCRAFTERS está confirmado! 🎬',
     htmlBody: html,
