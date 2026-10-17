@@ -1,6 +1,6 @@
 # ADR-0001 · Autoridad única de mutación de pagos en Apps Script
 
-**Estado:** aceptada · **Fecha:** 2026-10-16 · **Issue:** #20 · **Plan:** `docs/plans/2026-10-16-storycrafters-checkout-transferencia.md` (§5, hallazgos R3/F1/F7)
+**Estado:** aceptada, enmendada el 2026-10-17 (PayPal automático por IPN, ver abajo) · **Fecha:** 2026-10-16 · **Issue:** #20 · **Plan:** `docs/plans/2026-10-16-storycrafters-checkout-transferencia.md` (§5, hallazgos R3/F1/F7)
 
 ## Contexto
 
@@ -34,3 +34,7 @@ Al ser un solo proyecto, `LockService.getScriptLock()` serializa toda mutación 
 - **Limitación aceptada (R5, decisión del dueño):** los enlaces Hosted Button son públicos y reutilizables fuera de la landing; un pago huérfano (sin preinscripción) es posible y se gestiona por conciliación manual + playbook de reembolso. La invariante "ningún cobro sin registro" aplica al camino de la UI, no de forma absoluta.
 - **Sin cupo → lista de espera:** cuando `cuposDisponibles = 0`, la landing cambia el formulario a captura nombre/correo/WhatsApp (`accion: listaEspera`, pestaña "Lista de espera").
 - Rate limit público real: GAS web app no expone IP del cliente; el freno implementado es por correo/día (3) y por registro (3 comprobantes). Protección IP queda fuera de alcance documentado.
+
+## Enmienda 2026-10-17 · PayPal se acredita solo (IPN)
+
+Decisión del propietario: los pagos con PayPal (saldo o tarjeta) no deben esperar a un operador. El `doPost` reconoce el aviso IPN (formulario, no JSON) y `ipnPayPal` lo acredita solo si: PayPal responde `VERIFIED` al postback, el receptor coincide con `PAYPAL_RECEPTOR`, `payment_status = Completed`, y hay una única preinscripción `Pendiente` del mismo monto en USD vinculable por correo del pagador o por nombre. La acreditación usa el mismo núcleo que el menú (`acreditarPago_`: lock, settlement único `PayPal:txn_id`, cupo bajo lock, código de estudiante, outbox) con actor `PayPal (automático)`. Lo no vinculable queda como `Sin inscripción — revisar` en `Acreditaciones` (el operador lo reclama desde el menú con la misma referencia) y se avisa al equipo. Transferencias siguen siendo solo humanas.
