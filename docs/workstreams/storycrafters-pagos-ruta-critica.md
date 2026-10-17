@@ -18,8 +18,8 @@ antes de emitir unidades de implementación en paralelo. Spec: `docs/specs/2026-
 |---|---|---|---|
 | A — Contratos y gates | ADR de autoridad única, esta guía, props y fixtures | ✅ Esta PR | `feat/20-checkout-transferencia--issue-20` |
 | B — Persistencia y estados | Registration ID, idempotencia, `Estatus de Pago`, intentos, ledger, outbox, migración, confirmación humana (menú Sheets), fail-open cerrado, legacy retirado | ✅ Esta PR (backend) | misma |
-| C — Modal de elección | Selector Tarjeta/Transferencia en el `<dialog>` existente, subida de comprobante en UI, lista de espera cuando `cuposDisponibles<=0` | ⏳ **Siguiente** | por asignar |
-| D — Comprobantes | Endpoint `subirComprobante` implementado en esta PR; falta UI de C | backend ✅ / UI ⏳ | — |
+| C — Modal de elección | Selector Tarjeta/Transferencia en el `<dialog>` existente, subida de comprobante en UI, lista de espera cuando `cuposDisponibles<=0` | ✅ Esta PR (UI implementada) | misma |
+| D — Comprobantes | Endpoint `subirComprobante` + UI de subida | ✅ Esta PR | — |
 | E — Avisos a operaciones | Email al equipo con adjunto + WhatsApp manual implementados | backend ✅ | — |
 | F — Verificación humana | Menú `Confirmar pago verificado`, ledger, cupo bajo lock, auditoría | backend ✅ | — |
 | G — Bienvenida | Outbox con eventKey único; email automático; WhatsApp manual | backend ✅ | — |
@@ -36,9 +36,8 @@ A → C ──┘      F ──┘
 
 | Slice | Archivos | Depende de | Notas |
 |---|---|---|---|
-| **C · Modal selector + comprobante + lista de espera (UI)** | `site/index.html`, `site/js/inscripcion.js`, `site/css/styles.css` | Contrato de esta PR (estable) | El backend ya responde `iniciarPago`/`subirComprobante`/`listaEspera`. Un solo agente — todos los archivos son del mismo frente. |
-| **H · Despliegue y pruebas reales** | `backend/LEEME.md` (guía), sandbox | C + dueño (props, OPERADORES, cuenta real) | Redeploy `/exec`, migrar hoja de producción, bind a la hoja para el menú. Requiere manos del dueño. |
-| **Playbook huérfanos (R5 ii)** | `docs/` | — | Documento operativo corto: cómo reconciliar un cobro sin preinscripción. |
+| **H · Despliegue y pruebas reales** | `backend/LEEME.md` (guía), sandbox | dueño (props, OPERADORES, cuenta real) | Redeploy `/exec` vinculado a la hoja, migrar hoja de producción. **E2E de navegador descartado por el dueño** (16-oct); validación real queda en el sandbox manual de H. |
+| **Playbook huérfanos (R5 ii)** | `docs/conciliacion-pagos-huerfanos.md` | — | ✅ Esta PR |
 
 **Regla de colisión:** `backend-inscripciones.gs` y `inscripcion.js` ya no deben tocarse en paralelo con esta PR; quien tome C parte de `main` **después** de fusionarla.
 

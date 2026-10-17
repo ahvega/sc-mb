@@ -217,9 +217,7 @@
     api('GET')
       .then(function (res) {
         ocupado(false);
-        if (res.cuposDisponibles <= 0) {
-          return aviso('Los cupos de STORYCRAFTERS se llenaron. Escríbenos a <a href="mailto:info@themediabuilders.com">info@themediabuilders.com</a> para la lista de espera.');
-        }
+        if (res.cuposDisponibles <= 0) return ver('espera');
         var t = res.tarifas.filter(function (x) { return x.disponible && !x.carne; })[0];
         if (!t) return aviso('Las inscripciones están cerradas.');
         mostrarPago(t);
@@ -298,53 +296,195 @@
       });
   }
 
+  var contBoton = ventana.querySelector('[data-pp-boton]');
+  var tokenComprobante = null;
+
+  function vistaVentana(nombre) {
+    ['metodos', 'tarjeta', 'transf'].forEach(function (v) {
+      ventana.querySelector('[data-pp-' + v + ']').hidden = v !== nombre;
+    });
+    ventana.querySelector('.insc__error').textContent = '';
+  }
+
   function abrirVentanaPago() {
     var id = BOTONES[tarifa.id];
     if (!id) return error('No encontramos el botón de pago para la tarifa ' + tarifa.nombre + '. Escríbenos a info@themediabuilders.com.');
     pintarResumen(ventana.querySelector('[data-pp-resumen]'));
-    // Si los datos ya están en la hoja, no hace falta mandarlos por WhatsApp
-    ventana.querySelector('[data-pp-paso]').hidden = datosGuardados;
-    ventana.querySelector('[data-pp-wa]').hidden = datosGuardados;
-    // El botón guardado no recibe los datos: si no se guardaron, que el participante nos los envíe ya escritos
-    ventana.querySelector('[data-pp-wa]').href = 'https://wa.me/50492520327?text=' + encodeURIComponent([
-      'Hola, ya pagué mi inscripción a STORYCRAFTERS (' + tarifa.nombre + ', ' + dolares(tarifa.usd) + '). Mis datos:',
-      'Nombre: ' + datos.nombre,
-      'Correo: ' + datos.correo,
-      'WhatsApp: ' + datos.whatsapp,
-      'Ciudad: ' + datos.ciudad,
-      'Ocupación: ' + datos.ocupacion,
-      'Experiencia: ' + datos.experiencia,
-      'Talla de camiseta: ' + datos.talla,
-      'Restricciones alimentarias: ' + (datos.restricciones || 'ninguna'),
-      'Cómo se enteró: ' + (datos.comoSeEntero || '-'),
-      'Acepta comunicaciones: ' + (datos.comunicaciones ? 'sí' : 'no')
-    ].join('\n'));
-    var cont = ventana.querySelector('[data-pp-boton]');
-    var aviso = ventana.querySelector('.insc__error');
-    aviso.textContent = '';
-    cont.innerHTML = '';
     var esta = ++nVentana;
-    cont.id = 'paypal-container-' + id + '-' + esta;
+    contBoton.innerHTML = '';
+    ventana.querySelector('[data-pp-subir]').hidden = false;
+    ventana.querySelector('[data-pp-archivo]').disabled = false;
+    ventana.querySelector('[data-pp-archivo]').value = '';
     if (ventana.showModal) ventana.showModal(); else ventana.setAttribute('open', '');
-    // El intento de pago queda registrado ANTES de exponer el botón (R2 del plan): si PayPal
-    // cobra pero la página no se entera, el registro queda trazable para la conciliación.
+    if (regId) {
+      vistaVentana('metodos'); // con registro guardado: elegir tarjeta o transferencia
+    } else {
+      // Modo solo-botones (sin backend): el botón guardado no recibe los datos,
+      // así que el participante los envía por WhatsApp con el texto ya escrito.
+      ventana.querySelector('[data-pp-paso]').hidden = false;
+      var wa = ventana.querySelector('[data-pp-wa]');
+      wa.hidden = false;
+      wa.href = 'https://wa.me/50492520327?text=' + encodeURIComponent([
+        'Hola, ya pagué mi inscripción a STORYCRAFTERS (' + tarifa.nombre + ', ' + dolares(tarifa.usd) + '). Mis datos:',
+        'Nombre: ' + datos.nombre,
+        'Correo: ' + datos.correo,
+        'WhatsApp: ' + datos.whatsapp,
+        'Ciudad: ' + datos.ciudad,
+        'Ocupación: ' + datos.ocupacion,
+        'Experiencia: ' + datos.experiencia,
+        'Talla de camiseta: ' + datos.talla,
+        'Restricciones alimentarias: ' + (datos.restricciones || 'ninguna'),
+        'Cómo se enteró: ' + (datos.comoSeEntero || '-'),
+        'Acepta comunicaciones: ' + (datos.comunicaciones ? 'sí' : 'no')
+      ].join('\n'));
+      vistaVentana('tarjeta');
+      montarBotonTarjeta(esta);
+    }
+  }
+
+  // El intento queda registrado ANTES de exponer el botón (R2): si PayPal cobra y la página
+  // no se entera, el registro queda trazable para la conciliación manual del equipo.
+  function montarBotonTarjeta(esta) {
+    var aviso = ventana.querySelector('.insc__error');
     var listo = regId
-      ? api('POST', { accion: 'iniciarPago', registrationId: regId, metodo: 'paypal' })
-          .then(function (res) { return !!(res && res.ok); })
-          .catch(function () { return false; })
-      : Promise.resolve(true); // sin backend (botones solos) no hay registro que marcar
-    listo.then(function (preparado) {
+      ? api('POST', { accion: 'iniciarPago', registrationId: regId, metodo: 'paypal' }).catch(function () { return null; })
+      : Promise.resolve({ ok: true });
+    listo.then(function (res) {
       if (esta !== nVentana) return;
-      if (!preparado) { aviso.textContent = 'No pudimos preparar el pago. Intenta de nuevo o escríbenos a info@themediabuilders.com.'; return; }
+      if (!res || !res.ok) {
+        aviso.textContent = (res && res.error) || 'No pudimos preparar el pago. Intenta de nuevo o escríbenos a info@themediabuilders.com.';
+        return;
+      }
+      var id = BOTONES[tarifa.id];
+      contBoton.id = 'paypal-container-' + id + '-' + esta;
       cargarSdk('https://www.paypal.com/sdk/js?client-id=' + encodeURIComponent(BOTONES_CLIENT) +
         '&components=hosted-buttons&disable-funding=venmo&currency=USD')
         .then(function (paypal) {
           if (esta !== nVentana) return;
-          return paypal.HostedButtons({ hostedButtonId: id }).render('#' + cont.id);
+          return paypal.HostedButtons({ hostedButtonId: id }).render('#' + contBoton.id);
         })
         .catch(function () { if (esta === nVentana) aviso.textContent = 'No pudimos cargar PayPal. Recarga la página e intenta de nuevo.'; });
     });
   }
+
+  // Transferencia: el servidor entrega los datos bancarios (nunca van en el HTML) y un
+  // token de un solo uso para subir el comprobante.
+  function mostrarTransferencia(esta) {
+    var aviso = ventana.querySelector('.insc__error');
+    var v = ventana.querySelector('[data-pp-transf]');
+    api('POST', { accion: 'iniciarPago', registrationId: regId, metodo: 'transferencia' })
+      .then(function (res) {
+        if (esta !== nVentana) return;
+        if (!res || !res.ok) {
+          aviso.textContent = (res && res.transferenciaDisponible === false)
+            ? 'El pago por transferencia no está disponible ahora. Elige tarjeta o escríbenos al +504 9252-0327.'
+            : (res && res.error) || 'No pudimos preparar la transferencia. Intenta de nuevo.';
+          return;
+        }
+        tokenComprobante = res.token;
+        v.querySelector('[data-pp-banco]').innerHTML =
+          '<dt>Banco</dt><dd>' + escapeHtml(res.banco.banco) + '</dd>' +
+          '<dt>Titular</dt><dd>' + escapeHtml(res.banco.titular) + '</dd>' +
+          '<dt>Tipo de cuenta</dt><dd>' + escapeHtml(res.banco.tipo) + '</dd>' +
+          '<dt>Número de cuenta</dt><dd>' + escapeHtml(res.banco.cuenta) + '</dd>' +
+          '<dt>Monto exacto</dt><dd>L ' + Number(res.monto).toLocaleString('es-HN') + ' ' + res.moneda + '</dd>';
+        v.querySelector('[data-pp-monto]').textContent = 'L ' + Number(res.monto).toLocaleString('es-HN');
+        v.querySelector('[data-pp-ref]').textContent = res.referencia;
+        v.querySelector('[data-pp-recibido]').hidden = res.comprobante !== 'recibido';
+        v.querySelector('[data-pp-volver]').hidden = false;
+        vistaVentana('transf');
+      })
+      .catch(function () {
+        if (esta !== nVentana) return;
+        aviso.textContent = 'Sin conexión. Intenta de nuevo en unos minutos.';
+      });
+  }
+
+  function subirComprobante(esta) {
+    var aviso = ventana.querySelector('.insc__error');
+    var input = ventana.querySelector('[data-pp-archivo]');
+    var archivo = input.files && input.files[0];
+    if (!archivo) { aviso.textContent = 'Elige la foto o PDF de tu comprobante.'; return; }
+    if (archivo.size > 6 * 1024 * 1024) { aviso.textContent = 'El archivo pasa de 6 MB. Sube una foto más liviana o un PDF.'; return; }
+    aviso.textContent = '';
+    var btn = ventana.querySelector('[data-pp-subir]');
+    btn.disabled = true;
+    btn.textContent = 'Subiendo comprobante…';
+    var lector = new FileReader();
+    lector.onload = function () {
+      var base64 = String(lector.result).split(',')[1] || '';
+      api('POST', {
+        accion: 'subirComprobante', registrationId: regId, token: tokenComprobante,
+        archivo: { nombre: archivo.name, tipo: archivo.type || 'application/octet-stream', base64: base64 },
+      })
+        .then(function (res) {
+          if (esta !== nVentana) return;
+          if (res && res.ok) {
+            ventana.querySelector('[data-pp-recibido]').hidden = false;
+            btn.hidden = true;
+            input.disabled = true;
+            return;
+          }
+          aviso.textContent = (res && res.error) || 'No pudimos recibir tu comprobante. Intenta de nuevo.';
+        })
+        .catch(function () {
+          if (esta === nVentana) aviso.textContent = 'Sin conexión. El comprobante no llegó; intenta de nuevo.';
+        })
+        .then(function () {
+          if (esta !== nVentana) return;
+          btn.disabled = false;
+          btn.textContent = 'Enviar comprobante →';
+        });
+    };
+    lector.readAsDataURL(archivo);
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  ventana.querySelector('[data-pp-elige="tarjeta"]').addEventListener('click', function () {
+    vistaVentana('tarjeta');
+    montarBotonTarjeta(nVentana);
+  });
+  ventana.querySelector('[data-pp-elige="transferencia"]').addEventListener('click', function () {
+    ventana.querySelector('[data-pp-banco]').innerHTML = '<dt></dt><dd>Cargando los datos de la cuenta…</dd>';
+    vistaVentana('transf');
+    mostrarTransferencia(nVentana);
+  });
+  ventana.querySelector('[data-pp-subir]').addEventListener('click', function () { subirComprobante(nVentana); });
+  ventana.querySelector('[data-pp-volver]').addEventListener('click', function () { vistaVentana('metodos'); });
+
+  // Cupo lleno → lista de espera (nombre, correo, WhatsApp para el próximo evento)
+  var formEspera = q('[data-view="espera"]');
+  formEspera.addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (enviando || !formEspera.reportValidity()) return;
+    var btn = formEspera.querySelector('.insc__submit');
+    btn.disabled = true;
+    api('POST', {
+      accion: 'listaEspera',
+      nombre: formEspera.elements.nombre.value.trim(),
+      correo: formEspera.elements.correo.value.trim(),
+      whatsapp: formEspera.elements.whatsapp.value.trim(),
+    })
+      .then(function (res) {
+        btn.disabled = false;
+        if (res && res.ok) {
+          formEspera.innerHTML = '<h3>Listo, <span class="hl">te avisamos</span></h3>' +
+            '<p>Quedaste en la lista de espera de STORYCRAFTERS. Te escribimos al correo y WhatsApp que nos dejaste apenas abramos el próximo evento.</p>';
+          return;
+        }
+        formEspera.querySelector('.insc__error').textContent =
+          (res && res.error) || 'No pudimos guardar tus datos. Intenta de nuevo.';
+      })
+      .catch(function () {
+        btn.disabled = false;
+        formEspera.querySelector('.insc__error').textContent = 'Sin conexión. Intenta de nuevo en unos minutos.';
+      });
+  });
 
   function cerrarVentana() {
     if (ventana.close) ventana.close(); else ventana.removeAttribute('open');
