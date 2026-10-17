@@ -1,7 +1,11 @@
 # Redeploy del backend de inscripciones (issue #20) — guía para el propietario
 
-Solo el dueño de la cuenta Google puede hacer esta parte. ~30 minutos. No hace falta saber programar:
-todo es copiar/pegar y marcar casillas. **Hazlo en tu cuenta de Google con acceso a la hoja "Inscritos"**.
+Solo el dueño de la cuenta Google puede hacer esta parte. ~30 minutos. **Hazlo en tu cuenta de
+Google con acceso a la hoja "Inscritos"**.
+
+**Dos formas de hacerlo:** manual (pasos 1–8 de abajo — todo es copiar/pegar y marcar casillas,
+sin saber programar) o asistida (pegar el **Prompt** del final en tu sesión local de Claude y
+dejar que maneje el navegador por ti; tú solo haces el login y apruebas permisos).
 
 ## Lo que cambia (por qué hay que redistribuir)
 
@@ -100,12 +104,32 @@ Cuando tengas la cuenta definitiva de Media Builders (NO la temporal de pruebas)
 
 ---
 
-## Prompt para tu sesión local de Claude (parte del repo)
+## Prompt para tu sesión local de Claude (redeploy asistido por navegador)
 
-Cuando tengas la URL `/exec` nueva, pégale esto a Claude en el repo `sc-mb`:
+Pégale esto a Claude en el repo `sc-mb`. Claude abrirá tu Chrome, tú haces el login de Google y
+apruebas los permisos; él hace el resto por el navegador:
 
-> En `site/index.html` actualiza el atributo `data-apps-script-url` del bloque `#insc` con la
-> URL `/exec` nueva que te doy: `<PEGA AQUÍ LA URL>`. Verifica que sea el único lugar donde
-> aparece la URL vieja (grep por `script.google`), haz commit en una rama
-> `chore/20-exec-url--user` con mensaje explicando el redeploy del backend (#20), abre el PR
-> y fusiónalo. Después confirma en la hoja que una preinscripción de prueba llega bien.
+> Abre una sesión CDP de Chrome con la skill `browser-testing` para que yo haga login en mi
+> cuenta de Google (script.google.com) — espera a que yo confirme que ya entré. Luego usa ese
+> Chrome para redistribuir el backend nuevo del issue #20, siguiendo `backend/DESPLIEGUE.md`:
+>
+> 1. Desde mi hoja "Inscritos" abre Extensiones → Apps Script (proyecto vinculado; así aparece
+>    el menú STORYCRAFTERS). Si no sabes cuál hoja es, pídeme el link.
+> 2. En Code.gs pega el contenido COMPLETO de
+>    https://raw.githubusercontent.com/ahvega/sc-mb/main/backend/backend-inscripciones.gs
+>    (descárgalo con curl; el editor usa CodeMirror — pega vía portapapeles, no tipees).
+> 3. En Propiedades del script configura: HOJA_ID (de la URL de la hoja), OPERADORES (mi correo
+>    Google — te lo doy yo), CLAUDE_API_KEY solo si ya existía en el proyecto viejo.
+>    NO pongas TRANSFERENCIAS_HABILITADAS ni BANCO_* en producción: la cuenta real aún no está
+>    (gate G5). Si hago un despliegue de pruebas aparte, ahí sí va la cuenta temporal.
+> 4. Ejecuta `instalar` y `migrar` desde el editor; yo apruebo las autorizaciones OAuth cuando
+>    salgan. Verifica en la hoja que aparecieron las pestañas operativas y el menú STORYCRAFTERS.
+> 5. Si el proyecto viejo ya tiene la web app publicada: Implementar → Administrar → nueva
+>    versión (la URL /exec NO cambia). Si es proyecto nuevo: Nueva implementación → web app
+>    "Ejecutar como Yo" / "Cualquier persona" → captura la URL /exec.
+> 6. Si la URL cambió: actualiza `data-apps-script-url` en `site/index.html` (es el único lugar,
+>    verifícalo con grep), rama `chore/20-exec-url--user`, PR a main y merge.
+> 7. Corre la prueba de humo del paso 8 de la guía contra la landing y repórtame el resultado.
+>
+> En cada paso que falle o pida algo manual (login, OAuth, captcha) PAUSA y pídemelo — no
+> intentes saltártelo.
