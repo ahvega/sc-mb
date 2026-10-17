@@ -1361,8 +1361,20 @@ function revisarCarneConClaude(bytes, tipo, nombre, institucion) {
   if (v.es_carne_estudiantil && v.legible && v.nombre_coincide && v.vigencia === 'vigente') {
     return { estado: 'Aprobado', nota: 'Aprobado por Claude. ' + nota };
   }
+  // Solo se acepta un carné estudiantil vigente a nombre de quien se inscribe. Lo que se ve con claridad
+  // y no cumple (vencido, de otra persona o que no es carné) se rechaza con el motivo; lo dudoso va a revisión humana.
   if (v.es_carne_estudiantil && v.legible && v.vigencia === 'vencido') {
-    return { estado: 'Rechazado', nota: 'Rechazado por Claude (vencido). ' + nota, motivo: v.explicacion };
+    return { estado: 'Rechazado', nota: 'Rechazado por Claude (vencido). ' + nota,
+      motivo: 'Tu carné no está vigente. ' + v.explicacion };
+  }
+  if (v.es_carne_estudiantil && v.legible && !v.nombre_coincide) {
+    return { estado: 'Rechazado', nota: 'Rechazado por Claude (el nombre no coincide). ' + nota,
+      motivo: 'El carné no es válido para esta inscripción: el nombre del carné (' + v.nombre_en_carne +
+        ') no coincide con el nombre que escribiste en el formulario.' };
+  }
+  if (v.legible && !v.es_carne_estudiantil) {
+    return { estado: 'Rechazado', nota: 'Rechazado por Claude (no es un carné estudiantil). ' + nota,
+      motivo: 'La imagen que subiste no es un carné estudiantil vigente. ' + v.explicacion };
   }
   return { estado: 'Pendiente', nota: 'Para revisión humana. ' + nota };
 }
