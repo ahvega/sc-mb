@@ -246,7 +246,7 @@ test('confirmarPago con cupo lleno no da el lugar: queda para devolución, sin b
   const h = env.hoja('Inscritos');
   for (let i = 0; i < 40; i++) {
     const fila = new Array(env.colIndex('Inscritos', 'Código estudiante')).fill('');
-    fila[col(env, 'Tarifa') - 1] = 'Preventa';
+    fila[col(env, 'Tarifa') - 1] = 'Early Bird';
     fila[col(env, 'Estatus de Pago') - 1] = 'Completado';
     fila[col(env, 'Referencia de pago') - 1] = 'TXN-' + i;
     h.appendRow(fila);
@@ -360,12 +360,12 @@ test('migrar asigna Registration ID y traduce el estado legado sin reenviar bien
   // fila legada pagada (referencia real + bienvenida enviada) y otra pendiente
   const ancho = env.colIndex('Inscritos', 'Código estudiante');
   const vieja = new Array(ancho).fill('');
-  vieja[0] = new Date(); vieja[col(env, 'Tarifa') - 1] = 'Preventa';
+  vieja[0] = new Date(); vieja[col(env, 'Tarifa') - 1] = 'Early Bird';
   vieja[col(env, 'Referencia de pago') - 1] = 'TXN-VIEJA'; vieja[col(env, 'Correo enviado') - 1] = 'Sí';
   vieja[col(env, 'Pasarela') - 1] = 'PayPal (botón)';
   h.appendRow(vieja);
   const pend = new Array(ancho).fill('');
-  pend[0] = new Date(); pend[col(env, 'Tarifa') - 1] = 'Preventa';
+  pend[0] = new Date(); pend[col(env, 'Tarifa') - 1] = 'Early Bird';
   pend[col(env, 'Referencia de pago') - 1] = 'PENDIENTE';
   h.appendRow(pend);
   env.correos.length = 0;
