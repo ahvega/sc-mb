@@ -382,12 +382,15 @@
           return;
         }
         tokenComprobante = res.token;
-        v.querySelector('[data-pp-banco]').innerHTML =
-          '<dt>Banco</dt><dd>' + escapeHtml(res.banco.banco) + '</dd>' +
-          '<dt>Titular</dt><dd>' + escapeHtml(res.banco.titular) + '</dd>' +
-          '<dt>Tipo de cuenta</dt><dd>' + escapeHtml(res.banco.tipo) + '</dd>' +
-          '<dt>Número de cuenta</dt><dd>' + escapeHtml(res.banco.cuenta) + '</dd>' +
-          '<dt>Monto exacto</dt><dd>L ' + Number(res.monto).toLocaleString('es-HN') + ' ' + res.moneda + '</dd>';
+        var banco = v.querySelector('[data-pp-banco]');
+        banco.textContent = '';
+        [['Banco', res.banco.banco], ['Titular', res.banco.titular], ['Tipo de cuenta', res.banco.tipo],
+         ['Número de cuenta', res.banco.cuenta], ['Monto exacto', 'L ' + Number(res.monto).toLocaleString('es-HN') + ' ' + res.moneda]]
+          .forEach(function (par) {
+            var dt = document.createElement('dt'); dt.textContent = par[0];
+            var dd = document.createElement('dd'); dd.textContent = par[1];
+            banco.appendChild(dt); banco.appendChild(dd);
+          });
         v.querySelector('[data-pp-monto]').textContent = 'L ' + Number(res.monto).toLocaleString('es-HN');
         v.querySelector('[data-pp-ref]').textContent = res.referencia;
         v.querySelector('[data-pp-recibido]').hidden = res.comprobante !== 'recibido';
@@ -439,18 +442,16 @@
     lector.readAsDataURL(archivo);
   }
 
-  function escapeHtml(s) {
-    return String(s).replace(/[&<>"']/g, function (c) {
-      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-    });
-  }
-
   ventana.querySelector('[data-pp-elige="tarjeta"]').addEventListener('click', function () {
     vistaVentana('tarjeta');
     montarBotonTarjeta(nVentana);
   });
   ventana.querySelector('[data-pp-elige="transferencia"]').addEventListener('click', function () {
-    ventana.querySelector('[data-pp-banco]').innerHTML = '<dt></dt><dd>Cargando los datos de la cuenta…</dd>';
+    var dl = ventana.querySelector('[data-pp-banco]');
+    dl.textContent = '';
+    var dd = document.createElement('dd');
+    dd.textContent = 'Cargando los datos de la cuenta…';
+    dl.appendChild(dd);
     vistaVentana('transf');
     mostrarTransferencia(nVentana);
   });
