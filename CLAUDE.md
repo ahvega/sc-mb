@@ -27,7 +27,7 @@ Hostinger Git auto-deploy tracks the **`deploy`** branch (not `main`) of `ahvega
 
 - Editable data lives in HTML attributes, not JS: tier cutoffs `data-end` on `.tier` (`-06:00`, Honduras has no DST — preserve it), countdown `data-target`, spots: the number inside `<span data-spots-left>` (script reads its text and sizes the bar), next-price notice text from the following tier's `data-start`. `script.js` only derives state (countdown, current tier, chat). FAQ is native `<details name="faq">`.
 - Styles are class-based in `styles.css`; colors/fonts are `:root` tokens. Breakpoints: 1179px (the "Después" section switches layout), 859px (nav hides, sticky CTA + chat shift).
-- **Every image added or replaced in `site/assets/` MUST be optimized (always, no exceptions).** Images are WebP only: run `python tools/optimize_images.py` (Pillow; JPG q80 / PNG lossless -> .webp, deletes the original) and reference the `.webp`. The `optimize-image` skill (ShortPixel) is an alternative and needs `SHORTPIXEL_API_KEY`.
+- **Every image added or replaced in `site/assets/` MUST be optimized (always, no exceptions).** Images are WebP only (exception: `site/assets/email/*.png`, the email header/footer banners, because many email clients don't show WebP or SVG): run `python tools/optimize_images.py` (Pillow; JPG q80 / PNG lossless -> .webp, deletes the original) and reference the `.webp`. The `optimize-image` skill (ShortPixel) is an alternative and needs `SHORTPIXEL_API_KEY`.
 
 ## Gotchas
 
