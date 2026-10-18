@@ -33,6 +33,16 @@ const TARIFAS = {
 };
 
 const WHATSAPP_EQUIPO = '+504 9252-0327';
+const COMO_LLEGAR = 'https://maps.google.com/?cid=7892904626415519813';
+
+// Recordatorios por correo a los inscritos con pago Completado. Los encola el trigger horario de
+// la cola (procesarNotificaciones) a partir de las 9:00 de "desde" y hasta "hasta" (hora Honduras);
+// quien pague dentro de esa ventana también lo recibe. Uno por persona y plantilla.
+const RECORDATORIOS = [
+  { plantilla: 'recordatorio-5d-v1', desde: '2026-12-07', hasta: '2026-12-10' },
+  { plantilla: 'recordatorio-1d-v1', desde: '2026-12-11', hasta: '2026-12-11' },
+];
+const HORA_RECORDATORIOS = 9;
 
 const REMITENTE = 'STORYCRAFTERS · Media Builders';
 const CORREO_EVENTO = 'storycrafters@themediabuilders.com';
@@ -1032,6 +1042,7 @@ function procesarNotificaciones() {
   const lock = LockService.getScriptLock();
   if (!lock.tryLock(20000)) return; // otra ejecución la está procesando
   try {
+    try { encolarRecordatorios(); } catch (err) { console.error('Recordatorios: ' + err); }
     const h = pestana(TAB_NOTIF, COLUMNAS_NOTIF);
     const n = h.getLastRow() - 1;
     if (n < 1) return;
@@ -1069,6 +1080,20 @@ function procesarNotificaciones() {
   } finally {
     lock.releaseLock();
   }
+}
+
+/** Encola el recordatorio vigente (si hoy toca) para cada inscrito con pago Completado. */
+function encolarRecordatorios() {
+  const hoy = hoyHN();
+  if (Number(Utilities.formatDate(new Date(), EVENTO.zona, 'H')) < HORA_RECORDATORIOS) return;
+  const r = RECORDATORIOS.filter(function (x) { return hoy >= x.desde && hoy <= x.hasta; })[0];
+  if (!r) return;
+  leerInscritos(hojaInscritos()).forEach(function (fila) {
+    const regId = String(fila[COL['Registration ID'] - 1]).trim();
+    if (regId && String(fila[COL['Estatus de Pago'] - 1]) === ESTATUS_PAGO.COMPLETADO) {
+      encolarNotificacion(regId, 'email', r.plantilla, {});
+    }
+  });
 }
 
 function enviarNotificacion(regId, plantilla, datos) {
@@ -1119,6 +1144,31 @@ function enviarNotificacion(regId, plantilla, datos) {
        'Después de transferir, sube la foto del comprobante desde la página (o envíala por WhatsApp al ' + WHATSAPP_EQUIPO + '). ' +
        'Tu lugar se confirma cuando el equipo verifique el abono en el banco.'],
       { texto: 'Ir a la inscripción', url: LANDING_URL + '#inscripcion' });
+    return;
+  }
+  if (plantilla === 'recordatorio-5d-v1') {
+    const saludo = nombre.split(' ')[0] || 'storycrafter';
+    enviarCorreoSimple(correo, 'Faltan 5 días para STORYCRAFTERS, ' + saludo,
+      'Faltan <span>5 días</span>',
+      ['Hola, ' + saludo + '. El sábado nos vemos en STORYCRAFTERS. Te dejamos lo esencial:',
+       'Cuándo: sábado 12 de diciembre, de 8:00 a. m. a 6:30 p. m.',
+       'Dónde: Estudios Alfa y Omega Visión, San Pedro Sula.',
+       'No necesitas llevar cámara: Media Builders pone el equipo. El almuerzo y el coffee break están incluidos.',
+       'Si tienes una historia que te ronda la cabeza, llévala pensada. Es un buen día para empezar a darle forma.',
+       '¿Alguna duda? Responde este correo o escríbenos por WhatsApp al ' + WHATSAPP_EQUIPO + '.'],
+      { texto: 'Cómo llegar', url: COMO_LLEGAR });
+    return;
+  }
+
+  if (plantilla === 'recordatorio-1d-v1') {
+    const saludo = nombre.split(' ')[0] || 'storycrafter';
+    enviarCorreoSimple(correo, 'Mañana es STORYCRAFTERS, ' + saludo,
+      'Nos vemos <span>mañana</span>',
+      ['Hola, ' + saludo + '. Todo está listo para mañana.',
+       'Empezamos a las 8:00 a. m. en Estudios Alfa y Omega Visión, San Pedro Sula. Llega unos minutos antes para registrarte y recoger tu gafete.',
+       'Lleva ganas de escuchar, preguntar y tomar notas. Del resto nos encargamos nosotros.',
+       'Si surge algo de último momento, escríbenos por WhatsApp al ' + WHATSAPP_EQUIPO + '.'],
+      { texto: 'Cómo llegar', url: COMO_LLEGAR });
     return;
   }
   throw new Error('Plantilla desconocida: ' + plantilla);
