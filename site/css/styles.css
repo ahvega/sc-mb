@@ -546,6 +546,7 @@ body::before {
 .tier.is-current { background: var(--bg); color: var(--accent); }
 .tier.is-closed { display: none; }
 
+.tiers__cierre { margin: 14px 0 10px; font-size: var(--step--1); line-height: 1.5; }
 .notice { display: flex; gap: 10px; align-items: center; font-weight: 700; font-size: var(--step-3); }
 .notice[hidden] { display: none; }
 .notice__tag {

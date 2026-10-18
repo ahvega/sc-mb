@@ -23,10 +23,13 @@
 
   // Sin backend (modo demo o solo con botones de PayPal) la tarifa vigente sale de estas fechas.
   // Con backend, las tarifas vienen de Apps Script. Mantener igual a los data-end de .tier en index.html.
+  // Cierre de inscripciones: 3 días antes del evento (comida, diplomas y camisetas). Igual que en el backend.
+  var CIERRE = '2026-12-08';
+  var CERRADO = 'Las inscripciones cerraron el 8 de diciembre. Si quieres saber de próximas fechas, escríbenos por <a href="https://wa.me/50492520327" target="_blank" rel="noopener">WhatsApp</a> o a <a href="mailto:storycrafters@themediabuilders.com">storycrafters@themediabuilders.com</a>.';
   var TARIFAS = [
     { id: 'preventa', nombre: 'Early Bird', usd: 64, hasta: '2026-11-05' },
     { id: 'regular', nombre: 'Regular', usd: 72, hasta: '2026-11-25' },
-    { id: 'finales', nombre: 'Cupos finales', usd: 82, hasta: '2026-12-11' },
+    { id: 'finales', nombre: 'Cupos finales', usd: 82, hasta: '2026-12-08' },
   ];
 
   var form = root.querySelector('[data-view="datos"]');
@@ -210,7 +213,7 @@
     if (!API) {
       var h = hoyHN();
       var t = TARIFAS.filter(function (x) { return h <= x.hasta; })[0];
-      if (!t) return aviso('Las inscripciones están cerradas.');
+      if (!t) return aviso(CERRADO);
       return mostrarPago(t);
     }
     ocupado(true, 'Cargando…');
@@ -219,7 +222,7 @@
         ocupado(false);
         if (res.cuposDisponibles <= 0) return ver('espera');
         var t = res.tarifas.filter(function (x) { return x.disponible && !x.carne; })[0];
-        if (!t) return aviso('Las inscripciones están cerradas.');
+        if (!t) return aviso(CERRADO);
         mostrarPago(t);
       })
       .catch(function () { ocupado(false); error('No pudimos cargar las tarifas. Recarga la página e intenta de nuevo.'); });
@@ -597,6 +600,8 @@
         })
         .catch(function () { aviso('No pudimos validar tu enlace. Recarga la página e intenta de nuevo.'); });
     }
+  } else if (hoyHN() > CIERRE) {
+    aviso(CERRADO);
   } else {
     actualizarTipo();
     // Cupos: el contador sale de los pagos confirmados en la hoja y, si ya no hay, se muestra la

@@ -28,8 +28,8 @@ const EVENTO = {
 const TARIFAS = {
   preventa:   { nombre: 'Early Bird',    usd: 64, hnl: 1700, desde: '2026-01-01', hasta: '2026-11-05' },
   regular:    { nombre: 'Regular',       usd: 72, hnl: 1900, desde: '2026-11-06', hasta: '2026-11-25' },
-  finales:    { nombre: 'Cupos finales', usd: 82, hnl: 2200, desde: '2026-11-26', hasta: '2026-12-11' },
-  estudiante: { nombre: 'Estudiante',    usd: 64, hnl: 1700, desde: '2026-01-01', hasta: '2026-12-11', carne: true },
+  finales:    { nombre: 'Cupos finales', usd: 82, hnl: 2200, desde: '2026-11-26', hasta: '2026-12-08' },
+  estudiante: { nombre: 'Estudiante',    usd: 64, hnl: 1700, desde: '2026-01-01', hasta: '2026-12-08', carne: true },
 };
 
 const WHATSAPP_EQUIPO = '+504 9252-0327';
@@ -412,7 +412,8 @@ function preinscripcion(body) {
 
     // Siempre una fila nueva: la página es pública, así que nadie puede sobrescribir la fila de otra
     // persona con solo saber su correo. Si alguien lo intenta dos veces, el equipo borra la repetida.
-    hoja.appendRow(COLUMNAS.map(function (c) { return registro[c] === undefined ? '' : registro[c]; }));
+    hoja.getRange(filaLibre(hoja), 1, 1, COLUMNAS.length)
+      .setValues([COLUMNAS.map(function (c) { return registro[c] === undefined ? '' : registro[c]; })]);
     SpreadsheetApp.flush();
   } catch (err) {
     console.error(err);
@@ -486,6 +487,18 @@ function buscarRegistro(hoja, regId) {
     }
   }
   return null;
+}
+
+/**
+ * Primera fila sin Registration ID. No usa appendRow: las casillas de verificación vacías
+ * (Carné verificado, Gafete impreso, Camiseta pedida) cuentan como contenido y mandarían
+ * cada inscripción debajo de la fila 500.
+ */
+function filaLibre(hoja) {
+  const n = Math.max(hoja.getLastRow() - 1, 1);
+  const ids = hoja.getRange(2, COL['Registration ID'], n, 1).getValues();
+  for (let i = 0; i < ids.length; i++) if (!String(ids[i][0]).trim()) return i + 2;
+  return n + 2;
 }
 
 /** Intento de pago vivo del registro (bloquea cambiar de método hasta resolverlo), o null. */
