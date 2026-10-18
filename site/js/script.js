@@ -21,13 +21,13 @@
   }
 
   // ---- Tarifas vigentes (.tier[data-end]) ---------------------------------
-  // La vigente es la primera cuya fecha data-end aún no pasó; si todas pasaron, la última.
+  // La vigente es la primera cuya fecha data-end aún no pasó; si todas pasaron, todas quedan cerradas.
   function updateTiers() {
     var tiers = Array.prototype.slice.call(document.querySelectorAll('.tier[data-end]'));
     if (!tiers.length) return;
     var now = Date.now();
     var cur = tiers.findIndex(function (t) { return now < new Date(t.dataset.end).getTime(); });
-    if (cur < 0) cur = tiers.length - 1;
+    if (cur < 0) cur = tiers.length; // inscripciones cerradas
 
     tiers.forEach(function (t, i) {
       t.classList.toggle('is-current', i === cur);
