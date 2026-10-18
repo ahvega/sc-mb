@@ -1492,6 +1492,20 @@ function enviarCorreo(o) {
   GmailApp.sendEmail(o.to, o.subject, o.body || '', opciones);
 }
 
+// Encabezado y pie de los correos: imágenes PNG publicadas con la landing (site/assets/email/).
+// Llevan el fondo negro incluido para que el logo se vea igual en modo claro u oscuro.
+const IMG_CORREO = LANDING_URL + 'assets/email/';
+function cabeceraCorreo() {
+  return '<tr><td style="padding:0 0 28px;"><a href="' + LANDING_URL + '" style="text-decoration:none;">' +
+    '<img src="' + IMG_CORREO + 'correo-cabecera.png" width="600" alt="STORYCRAFTERS · Masterclass en vivo · Storytelling documental" ' +
+    'style="display:block;width:100%;max-width:600px;height:auto;border:0;"></a></td></tr>';
+}
+function pieCorreo() {
+  return '<tr><td style="padding:24px 0 0;">' +
+    '<img src="' + IMG_CORREO + 'correo-pie.png" width="600" alt="Un programa de Media Builders" ' +
+    'style="display:block;width:100%;max-width:600px;height:auto;border:0;"></td></tr>';
+}
+
 /** Correo corto con el estilo de la landing. En el título, <span> marca la palabra en ámbar. */
 function enviarCorreoSimple(para, asunto, titulo, parrafos, boton) {
   const C = { negro: '#0A0A0A', linea: '#2A2A2A', hueso: '#EDE8DF', gris: '#9A968F', ambar: '#E8B654' };
@@ -1503,6 +1517,7 @@ function enviarCorreoSimple(para, asunto, titulo, parrafos, boton) {
     '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="' + C.negro + '">' +
     '<tr><td align="center" style="padding:32px 16px;">' +
     '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;">' +
+    cabeceraCorreo() +
     '<tr><td style="padding:0 0 24px;font-family:' + mono + ';font-size:11px;letter-spacing:2px;color:' + C.gris + ';">' +
     '<span style="color:#E5484D;">●</span> REC &nbsp;·&nbsp; STORYCRAFTERS &nbsp;·&nbsp; 12.12.2026</td></tr>' +
     '<tr><td style="padding:0 0 24px;"><h1 style="margin:0;font-family:' + display + ';font-size:42px;line-height:1.02;' +
@@ -1518,6 +1533,7 @@ function enviarCorreoSimple(para, asunto, titulo, parrafos, boton) {
     '<tr><td><div style="height:1px;background:' + C.linea + ';font-size:0;line-height:0;">&nbsp;</div>' +
     '<p style="margin:16px 0 0;font-family:' + mono + ';font-size:11px;letter-spacing:2px;color:' + C.gris + ';">' +
     'INVESTIGA · ESTRUCTURA · GRABA<br>STORYCRAFTERS · MEDIA BUILDERS · SC.THEMEDIABUILDERS.COM</p></td></tr>' +
+    pieCorreo() +
     '</table></td></tr></table></div>';
   enviarCorreo({ to: para, subject: asunto, htmlBody: html, name: REMITENTE, replyTo: CORREO_EVENTO });
 }
@@ -1802,6 +1818,7 @@ function enviarConfirmacion(r) {
     '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="' + C.negro + '" style="background:' + C.negro + ';">' +
     '<tr><td align="center" style="padding:32px 16px;">' +
     '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;">' +
+    cabeceraCorreo() +
     '<tr><td style="padding:0 0 28px;font-family:' + F.mono + ';font-size:11px;letter-spacing:2px;color:' + C.gris + ';">' +
     '<span style="color:#E5484D;">●</span> REC &nbsp;·&nbsp; 12.12.2026 &nbsp;·&nbsp; SAN PEDRO SULA &nbsp;·&nbsp; 08:00:00:00</td></tr>' +
     '<tr><td style="padding:0 0 32px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>' +
@@ -1832,6 +1849,7 @@ function enviarConfirmacion(r) {
     '<p style="margin:16px 0 0;font-family:' + F.mono + ';font-size:11px;letter-spacing:2px;color:' + C.gris + ';">' +
     'INVESTIGA · ESTRUCTURA · GRABA<br>STORYCRAFTERS · MEDIA BUILDERS · SC.THEMEDIABUILDERS.COM</p>' +
     '</td></tr>' +
+    pieCorreo() +
     '</table></td></tr></table></div>';
 
   enviarCorreo({
