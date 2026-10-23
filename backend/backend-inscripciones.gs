@@ -785,6 +785,7 @@ function onOpen() {
     .addItem('Procesar notificaciones pendientes', 'uiProcesarNotificaciones')
     .addItem('Migrar esquema de pagos', 'uiMigrar')
     .addToUi();
+  try { ponerDesplegableEstatus_(SpreadsheetApp.getActive()); } catch (err) { /* sin permiso: queda sin desplegable */ }
 }
 
 function uiMigrar() {
@@ -1447,11 +1448,17 @@ function revisarCarneConClaude(bytes, tipo, nombre, institucion) {
  * Inscritos: escribir la referencia a mano YA NO aprueba ni envía bienvenida (issue #20) —
  * queda marcado como edición fuera de procedimiento para que el operador use el menú
  * STORYCRAFTERS ▸ "Confirmar pago verificado", que sí deja auditoría.
+ * Atajo del operador (decisión del dueño, 2026-10-23): elegir "Confirmado" en "Estatus de Pago"
+ * confirma con el mismo núcleo que el menú (acreditarPago_). Solo si quien edita está en OPERADORES.
  */
 function alEditarHoja(e) {
   const hoja = e.range.getSheet();
   if (e.range.getRow() < 2) return;
   if (hoja.getName() === 'Inscritos') {
+    const ce = COL['Estatus de Pago'];
+    if (hoja.getLastColumn() >= ce && e.range.getColumn() <= ce && e.range.getLastColumn() >= ce) {
+      for (let fila = e.range.getRow(); fila <= e.range.getLastRow(); fila++) cambioEstatusAMano_(hoja, fila);
+    }
     const c = COL['Referencia de pago'];
     if (e.range.getColumn() > c || e.range.getLastColumn() < c) return;
     if (hoja.getLastColumn() < COL['Estatus de Pago']) return; // esquema viejo: migrar() primero
@@ -1469,6 +1476,58 @@ function alEditarHoja(e) {
   if (hoja.getName() !== 'Estudiantes') return;
   if (e.range.getColumn() > COL_EST['Estado'] || e.range.getLastColumn() < COL_EST['Estado']) return;
   for (let fila = e.range.getRow(); fila <= e.range.getLastRow(); fila++) procesarEstado(hoja, fila);
+}
+
+/**
+ * "Estatus de Pago" editado a mano. "Confirmado" (o "Completado") de un operador acredita el pago:
+ * método según la fila, monto de la tarifa, referencia MANUAL-<Registration ID> (única por registro).
+ * Cualquier otro cambio a mano se revierte: el estatus solo lo escribe el script.
+ */
+function cambioEstatusAMano_(hoja, fila) {
+  const ancho = Math.min(COLUMNAS.length, hoja.getLastColumn());
+  const v = hoja.getRange(fila, 1, 1, ancho).getValues()[0];
+  const get = function (col) { return v[COL[col] - 1]; };
+  const celda = hoja.getRange(fila, COL['Estatus de Pago']);
+  const nuevo = String(get('Estatus de Pago')).trim().toLowerCase();
+  const regId = String(get('Registration ID'));
+  const nota = function (txt) { hoja.getRange(fila, COL['Estado de gestión']).setValue(txt); };
+  if (String(get('Verificado por'))) { // ya acreditado por el script: no se deshace desde la celda
+    if (String(get('Estatus de Pago')) !== ESTATUS_PAGO.COMPLETADO) {
+      celda.setValue(ESTATUS_PAGO.COMPLETADO);
+      nota('Este pago ya estaba confirmado; para anularlo avisa al equipo');
+    }
+    return;
+  }
+  if (nuevo === ESTATUS_PAGO.PENDIENTE.toLowerCase() || !regId) return;
+  celda.setValue(ESTATUS_PAGO.PENDIENTE); // el script decide si pasa a Completado
+  if (nuevo !== 'confirmado' && nuevo !== ESTATUS_PAGO.COMPLETADO.toLowerCase()) return;
+  const operador = operadorAutorizado();
+  if (!operador) {
+    nota('No se confirmó: tu correo no está en la lista OPERADORES (o Google no lo mostró). Usa el menú STORYCRAFTERS.');
+    audit('confirmar-rechazado', regId, 'Confirmado escrito a mano por: ' + actorActual());
+    return;
+  }
+  const metodo = String(get('Método de pago')) === METODOS.TRANSFERENCIA ? METODOS.TRANSFERENCIA : METODOS.PAYPAL;
+  const t = TARIFAS[Object.keys(TARIFAS).filter(function (k) { return TARIFAS[k].nombre === get('Tarifa'); })[0]];
+  if (!t) { nota('No se confirmó: la fila no tiene una tarifa válida. Usa el menú STORYCRAFTERS.'); return; }
+  const r = acreditarPago_(fila, {
+    metodo: metodo,
+    referencia: 'MANUAL-' + regId,
+    monto: metodo === METODOS.TRANSFERENCIA ? t.hnl : t.usd,
+    moneda: metodo === METODOS.TRANSFERENCIA ? 'HNL' : 'USD',
+    registrationId: regId,
+  }, operador);
+  if (!r.ok) nota('No se confirmó: ' + r.error);
+}
+
+/** Desplegable Pendiente / Confirmado en "Estatus de Pago" (se vuelve a poner al abrir la hoja). */
+function ponerDesplegableEstatus_(ss) {
+  const hoja = ss.getSheetByName('Inscritos');
+  if (!hoja || hoja.getLastColumn() < COL['Estatus de Pago']) return;
+  const regla = SpreadsheetApp.newDataValidation()
+    .requireValueInList([ESTATUS_PAGO.PENDIENTE, 'Confirmado', ESTATUS_PAGO.COMPLETADO], true)
+    .setAllowInvalid(true).build();
+  hoja.getRange(2, COL['Estatus de Pago'], Math.max(hoja.getMaxRows() - 1, 1), 1).setDataValidation(regla);
 }
 
 function procesarEstado(hoja, fila) {
