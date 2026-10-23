@@ -205,6 +205,23 @@ function asegurarEsquema() {
  * legadas (Estatus vacío + referencia real ≠ PENDIENTE) para hojas aún sin migrar.
  * Una referencia escrita a mano en una fila Pendiente NUNCA entra a Control ni a Gafetes.
  */
+/**
+ * Escribe una fórmula escrita con comas. En hojas con configuración regional que separa
+ * argumentos con ";" (p. ej. es_ES) la versión con comas da "Error de análisis": se reintenta
+ * cambiando por ";" las comas que están fuera de comillas.
+ */
+function ponerFormula_(rango, formula) {
+  rango.setFormula(formula);
+  SpreadsheetApp.flush();
+  if (String(rango.getDisplayValue()) !== '#ERROR!') return;
+  let enComillas = false;
+  const conPuntoYComa = formula.split('').map(function (ch) {
+    if (ch === '"') enComillas = !enComillas;
+    return ch === ',' && !enComillas ? ';' : ch;
+  }).join('');
+  rango.setFormula(conPuntoYComa);
+}
+
 function rehacerVistas(ss) {
   const col = function (c) { return 'Inscritos!' + letra(COL[c]) + '2:' + letra(COL[c]); };
   const cEst = col('Estatus de Pago');
@@ -238,7 +255,12 @@ function rehacerVistas(ss) {
     filas.push([t, '=COUNTIFS(' + col('Talla de camiseta') + ',"' + t + '",' + pagado + ambas(col('Talla de camiseta') + ',"' + t + '"') + ')']);
   });
   filas.push(['Total', '=SUM(B15:B20)']);
-  control.getRange(1, 1, filas.length, 2).setValues(filas);
+  control.getRange(1, 1, filas.length, 2).setValues(filas.map(function (f) {
+    return [f[0], String(f[1]).charAt(0) === '=' ? '' : f[1]];
+  }));
+  filas.forEach(function (f, i) {
+    if (String(f[1]).charAt(0) === '=') ponerFormula_(control.getRange(i + 1, 2), f[1]);
+  });
   control.getRange('A1').setFontWeight('bold').setFontSize(14);
   control.getRange('A8:B8').setFontWeight('bold');
   control.getRange('A14:B14').setFontWeight('bold');
@@ -247,7 +269,7 @@ function rehacerVistas(ss) {
   // Pestaña para combinar correspondencia de gafetes (nombre, ocupación, ciudad)
   const gafetes = ss.getSheetByName('Gafetes') || ss.insertSheet('Gafetes');
   gafetes.clear();
-  gafetes.getRange('A1').setFormula(
+  ponerFormula_(gafetes.getRange('A1'),
     '=QUERY(Inscritos!A:' + letra(COLUMNAS.length) + ',"select B, F, E, H, L where B is not null and (' +
       letra(COL['Estatus de Pago']) + ' = \'Completado\' or (' + letra(COL['Referencia de pago']) +
       ' is not null and ' + letra(COL['Referencia de pago']) + ' <> \'' + PAGO_PENDIENTE + '\' and ' +
