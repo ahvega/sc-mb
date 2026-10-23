@@ -1499,17 +1499,20 @@ function cambioEstatusAMano_(hoja, fila) {
     return;
   }
   if (nuevo === ESTATUS_PAGO.PENDIENTE.toLowerCase() || !regId) return;
-  celda.setValue(ESTATUS_PAGO.PENDIENTE); // el script decide si pasa a Completado
-  if (nuevo !== 'confirmado' && nuevo !== ESTATUS_PAGO.COMPLETADO.toLowerCase()) return;
+  // "Pendiente" solo se escribe si NO se acredita: acreditarPago_ escribe "Completado" con otro
+  // objeto de hoja (openById) y Sheets no garantiza el orden entre ambos, así que un "Pendiente"
+  // escrito antes podía quedar encima del "Completado".
+  const rechazar = function (txt) { celda.setValue(ESTATUS_PAGO.PENDIENTE); if (txt) nota(txt); };
+  if (nuevo !== 'confirmado' && nuevo !== ESTATUS_PAGO.COMPLETADO.toLowerCase()) return rechazar('');
   const operador = operadorAutorizado();
   if (!operador) {
-    nota('No se confirmó: tu correo no está en la lista OPERADORES (o Google no lo mostró). Usa el menú STORYCRAFTERS.');
+    rechazar('No se confirmó: tu correo no está en la lista OPERADORES (o Google no lo mostró). Usa el menú STORYCRAFTERS.');
     audit('confirmar-rechazado', regId, 'Confirmado escrito a mano por: ' + actorActual());
     return;
   }
   const metodo = String(get('Método de pago')) === METODOS.TRANSFERENCIA ? METODOS.TRANSFERENCIA : METODOS.PAYPAL;
   const t = TARIFAS[Object.keys(TARIFAS).filter(function (k) { return TARIFAS[k].nombre === get('Tarifa'); })[0]];
-  if (!t) { nota('No se confirmó: la fila no tiene una tarifa válida. Usa el menú STORYCRAFTERS.'); return; }
+  if (!t) return rechazar('No se confirmó: la fila no tiene una tarifa válida. Usa el menú STORYCRAFTERS.');
   const r = acreditarPago_(fila, {
     metodo: metodo,
     referencia: 'MANUAL-' + regId,
@@ -1517,7 +1520,7 @@ function cambioEstatusAMano_(hoja, fila) {
     moneda: metodo === METODOS.TRANSFERENCIA ? 'HNL' : 'USD',
     registrationId: regId,
   }, operador);
-  if (!r.ok) nota('No se confirmó: ' + r.error);
+  if (!r.ok) rechazar('No se confirmó: ' + r.error);
 }
 
 /** Desplegable Pendiente / Confirmado en "Estatus de Pago" (se vuelve a poner al abrir la hoja). */
