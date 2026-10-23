@@ -125,6 +125,16 @@
     }
   }
 
+  // ---- Portada en celular ------------------------------------------------
+  // Mientras se ven los botones de la portada se ocultan la barra inferior
+  // y el botón de WhatsApp, para no tapar ni repetir "Inscribirme".
+  var heroActions = document.querySelector('.hero__actions');
+  if (heroActions && 'IntersectionObserver' in window) {
+    new IntersectionObserver(function (entries) {
+      document.body.classList.toggle('hero-cta-visible', entries[0].isIntersecting);
+    }).observe(heroActions);
+  }
+
   tickCountdown();
   updateTiers();
   updateSpots();

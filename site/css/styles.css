@@ -1034,4 +1034,22 @@ body::before {
   .nav { display: none; }
   .sticky-cta { display: flex; }
   .chat { bottom: 84px; }
+  /* En celular la barra inferior ya tiene "Inscribirme": se quita el duplicado del encabezado */
+  .header .btn { display: none; }
+  /* La fecha vertical choca con el logo; la fecha ya aparece en los datos del hero */
+  .hero__date { display: none; }
+  .cell--include { min-height: 0; }
+  .speaker__photo { aspect-ratio: 1 / 1; }
+  .speaker__photo img { object-position: 50% 25%; }
+  /* Agenda: subtítulo bajo el título y duración siempre en su propia línea */
+  .agenda__head { flex-direction: column; align-items: flex-start; gap: 6px; }
+  .row__body { flex-direction: column; gap: 6px; }
+  .footer__col a { display: block; }
+  .footer__sep { display: none; }
+  /* Que la barra inferior no tape el final de la página */
+  body { padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
+  .sticky-cta, .chat { transition: transform .25s ease, opacity .25s ease; }
+  .hero-cta-visible .sticky-cta { transform: translateY(100%); opacity: 0; pointer-events: none; }
+  .hero-cta-visible .chat { opacity: 0; pointer-events: none; }
+  .hero__actions .btn { flex: 1 1 0; text-align: center; padding-left: 12px; padding-right: 12px; white-space: nowrap; }
 }
