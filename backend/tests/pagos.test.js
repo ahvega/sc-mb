@@ -212,10 +212,10 @@ test('confirmarPago acredita, audita y dispara una sola bienvenida por la cola',
   assert.equal(env.correos.length, 1);
   assert.match(env.correos[0].subject, /confirmado/);
   assert.equal(h.getRange(2, col(env, 'Correo enviado')).getValue(), 'Sí');
-  // WhatsApp queda manual, no enviado automáticamente
+  // La bienvenida no crea tarea de WhatsApp: ese canal queda para comunicación directa
   const hN = env.hoja('Notificaciones');
   const wa = hN.getRange(2, 1, hN.getLastRow() - 1, 10).getValues().filter(x => x[2] === 'whatsapp');
-  assert.equal(wa[0][4], 'manual');
+  assert.equal(wa.length, 0);
   // el intento quedó cerrado como verified
   const hI = env.hoja('Intentos de Pago');
   assert.equal(hI.getRange(2, env.colIndex('Intentos de Pago', 'Estado')).getValue(), 'verified');

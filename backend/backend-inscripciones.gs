@@ -1023,9 +1023,9 @@ function completarAcreditacion(hoja, fila, regId, metodo, referencia, monto, mon
   audit('confirmar-pago', regId, settlementKey + ' · ' + moneda + ' ' + monto);
   SpreadsheetApp.flush();
 
-  // Bienvenida por la cola única de notificaciones (F1): correo automático, WhatsApp como tarea manual.
+  // Bienvenida por la cola única de notificaciones (F1): solo correo. WhatsApp queda para
+  // comunicación directa del equipo, sin tarea de bienvenida (decisión del dueño, 2026-10-23).
   encolarNotificacion(regId, 'email', 'bienvenida-v1', {});
-  encolarNotificacion(regId, 'whatsapp', 'bienvenida-v1', {});
   procesarNotificaciones();
 }
 
