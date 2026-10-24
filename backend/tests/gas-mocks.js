@@ -52,6 +52,7 @@ function crearEntorno(opciones) {
       return this;
     }
     setFormula(v) { return this.setValue(v); }
+    getDisplayValue() { return String(this.getValue()); }
     setNote() { return this; } setDataValidation() { return this; }
     setBackground() { return this; } setFontColor() { return this; }
     setFontWeight() { return this; } setFontSize() { return this; }

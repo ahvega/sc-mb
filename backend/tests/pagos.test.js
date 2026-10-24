@@ -212,10 +212,10 @@ test('confirmarPago acredita, audita y dispara una sola bienvenida por la cola',
   assert.equal(env.correos.length, 1);
   assert.match(env.correos[0].subject, /confirmado/);
   assert.equal(h.getRange(2, col(env, 'Correo enviado')).getValue(), 'Sí');
-  // WhatsApp queda manual, no enviado automáticamente
+  // La bienvenida no crea tarea de WhatsApp: ese canal queda para comunicación directa
   const hN = env.hoja('Notificaciones');
   const wa = hN.getRange(2, 1, hN.getLastRow() - 1, 10).getValues().filter(x => x[2] === 'whatsapp');
-  assert.equal(wa[0][4], 'manual');
+  assert.equal(wa.length, 0);
   // el intento quedó cerrado como verified
   const hI = env.hoja('Intentos de Pago');
   assert.equal(hI.getRange(2, env.colIndex('Intentos de Pago', 'Estado')).getValue(), 'verified');
@@ -393,4 +393,56 @@ test('listaEspera guarda nombre, correo y WhatsApp, y deduplica por correo', () 
   assert.equal(r2.ok, true);
   assert.equal(r2.repetido, true);
   assert.equal(env.hoja('Lista de espera').getLastRow(), 2);
+});
+
+// ---------- Atajo: elegir "Confirmado" en Estatus de Pago ----------
+
+const marcar = (env, valor) => {
+  const h = env.hoja('Inscritos');
+  const c = col(env, 'Estatus de Pago');
+  h.getRange(2, c).setValue(valor);
+  env.ctx.alEditarHoja(env.edicion(h, 2, c));
+  return h;
+};
+
+test('operador elige "Confirmado": acredita con la tarifa, audita y envía una bienvenida', () => {
+  const env = crearEntorno(OPS);
+  const regId = pre(env).registrationId;
+  env.correos.length = 0;
+  const h = marcar(env, 'Confirmado');
+  assert.equal(h.getRange(2, col(env, 'Estatus de Pago')).getValue(), 'Completado');
+  assert.equal(h.getRange(2, col(env, 'Verificado por')).getValue(), 'operador@test.local');
+  assert.equal(h.getRange(2, col(env, 'Monto cobrado')).getValue(), 64);
+  assert.equal(h.getRange(2, col(env, 'Referencia de pago')).getValue(), 'MANUAL-' + regId);
+  assert.equal(env.correos.length, 1);
+  assert.equal(env.json(env.ctx.doGet({ parameter: {} })).cuposDisponibles, 39);
+});
+
+test('"Confirmado" de alguien fuera de OPERADORES no confirma y vuelve a Pendiente', () => {
+  const env = crearEntorno({ props: OPS.props, operador: 'otra@test.local' });
+  pre(env);
+  env.correos.length = 0;
+  const h = marcar(env, 'Confirmado');
+  assert.equal(h.getRange(2, col(env, 'Estatus de Pago')).getValue(), 'Pendiente');
+  assert.match(String(h.getRange(2, col(env, 'Estado de gestión')).getValue()), /No se confirmó/);
+  assert.equal(env.correos.length, 0);
+  assert.equal(env.json(env.ctx.doGet({ parameter: {} })).cuposDisponibles, 40);
+});
+
+test('escribir "Completado" a mano sin operador ya no ocupa cupo', () => {
+  const env = crearEntorno();
+  pre(env);
+  const h = marcar(env, 'Completado');
+  assert.equal(h.getRange(2, col(env, 'Estatus de Pago')).getValue(), 'Pendiente');
+  assert.equal(env.json(env.ctx.doGet({ parameter: {} })).cuposDisponibles, 40);
+});
+
+test('un pago ya confirmado no se deshace cambiando la celda', () => {
+  const env = crearEntorno(OPS);
+  pre(env);
+  marcar(env, 'Confirmado');
+  env.correos.length = 0;
+  const h = marcar(env, 'Pendiente');
+  assert.equal(h.getRange(2, col(env, 'Estatus de Pago')).getValue(), 'Completado');
+  assert.equal(env.correos.length, 0);
 });

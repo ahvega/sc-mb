@@ -24,6 +24,10 @@ Sin un carné aprobado no se puede pagar la tarifa de estudiante: el script lo r
 
 ## Cómo se confirma un pago a mano (transferencia, o PayPal que no se pudo vincular solo)
 
+**Forma rápida (recomendada):** revisa en PayPal o en el banco que el dinero llegó; luego, en la pestaña **Inscritos**, en la fila de esa persona, elige **Confirmado** en la columna **Estatus de Pago**. Listo: pasa a `Completado`, sale la bienvenida y la landing resta un lugar. Solo funciona si tu correo está en `OPERADORES`; si no, la celda vuelve a `Pendiente` y `Estado de gestión` dice por qué. La referencia queda como `MANUAL-<Registration ID>` y en **Auditoría** queda quién confirmó. El monto que se registra es el de la tarifa (USD por PayPal, HNL por transferencia). Si Google no revela tu correo al disparador (pasa con cuentas Gmail que no son las que instalaron el script), usa el menú de abajo.
+
+**Forma con datos (menú):**
+
 1. La persona llena el formulario y sus datos se guardan en **Inscritos** con `Estatus de Pago` = `Pendiente` y un `Registration ID` propio.
 2. Paga con el botón de PayPal de su tarifa, o elige **Transferencia**: la página le muestra los datos bancarios (solo si los configuraste, ver abajo) y le pide la foto del comprobante.
 3. **Tú verificas el dinero de verdad**: entras a PayPal o a la app del banco y compruebas que el abono existe con el monto y la moneda correctos. La foto del comprobante **no prueba** que el dinero llegó.

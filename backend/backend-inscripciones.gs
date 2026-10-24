@@ -205,6 +205,23 @@ function asegurarEsquema() {
  * legadas (Estatus vacío + referencia real ≠ PENDIENTE) para hojas aún sin migrar.
  * Una referencia escrita a mano en una fila Pendiente NUNCA entra a Control ni a Gafetes.
  */
+/**
+ * Escribe una fórmula escrita con comas. En hojas con configuración regional que separa
+ * argumentos con ";" (p. ej. es_ES) la versión con comas da "Error de análisis": se reintenta
+ * cambiando por ";" las comas que están fuera de comillas.
+ */
+function ponerFormula_(rango, formula) {
+  rango.setFormula(formula);
+  SpreadsheetApp.flush();
+  if (String(rango.getDisplayValue()) !== '#ERROR!') return;
+  let enComillas = false;
+  const conPuntoYComa = formula.split('').map(function (ch) {
+    if (ch === '"') enComillas = !enComillas;
+    return ch === ',' && !enComillas ? ';' : ch;
+  }).join('');
+  rango.setFormula(conPuntoYComa);
+}
+
 function rehacerVistas(ss) {
   const col = function (c) { return 'Inscritos!' + letra(COL[c]) + '2:' + letra(COL[c]); };
   const cEst = col('Estatus de Pago');
@@ -238,7 +255,12 @@ function rehacerVistas(ss) {
     filas.push([t, '=COUNTIFS(' + col('Talla de camiseta') + ',"' + t + '",' + pagado + ambas(col('Talla de camiseta') + ',"' + t + '"') + ')']);
   });
   filas.push(['Total', '=SUM(B15:B20)']);
-  control.getRange(1, 1, filas.length, 2).setValues(filas);
+  control.getRange(1, 1, filas.length, 2).setValues(filas.map(function (f) {
+    return [f[0], String(f[1]).charAt(0) === '=' ? '' : f[1]];
+  }));
+  filas.forEach(function (f, i) {
+    if (String(f[1]).charAt(0) === '=') ponerFormula_(control.getRange(i + 1, 2), f[1]);
+  });
   control.getRange('A1').setFontWeight('bold').setFontSize(14);
   control.getRange('A8:B8').setFontWeight('bold');
   control.getRange('A14:B14').setFontWeight('bold');
@@ -247,7 +269,7 @@ function rehacerVistas(ss) {
   // Pestaña para combinar correspondencia de gafetes (nombre, ocupación, ciudad)
   const gafetes = ss.getSheetByName('Gafetes') || ss.insertSheet('Gafetes');
   gafetes.clear();
-  gafetes.getRange('A1').setFormula(
+  ponerFormula_(gafetes.getRange('A1'),
     '=QUERY(Inscritos!A:' + letra(COLUMNAS.length) + ',"select B, F, E, H, L where B is not null and (' +
       letra(COL['Estatus de Pago']) + ' = \'Completado\' or (' + letra(COL['Referencia de pago']) +
       ' is not null and ' + letra(COL['Referencia de pago']) + ' <> \'' + PAGO_PENDIENTE + '\' and ' +
@@ -785,6 +807,7 @@ function onOpen() {
     .addItem('Procesar notificaciones pendientes', 'uiProcesarNotificaciones')
     .addItem('Migrar esquema de pagos', 'uiMigrar')
     .addToUi();
+  try { ponerDesplegableEstatus_(SpreadsheetApp.getActive()); } catch (err) { /* sin permiso: queda sin desplegable */ }
 }
 
 function uiMigrar() {
@@ -1000,9 +1023,9 @@ function completarAcreditacion(hoja, fila, regId, metodo, referencia, monto, mon
   audit('confirmar-pago', regId, settlementKey + ' · ' + moneda + ' ' + monto);
   SpreadsheetApp.flush();
 
-  // Bienvenida por la cola única de notificaciones (F1): correo automático, WhatsApp como tarea manual.
+  // Bienvenida por la cola única de notificaciones (F1): solo correo. WhatsApp queda para
+  // comunicación directa del equipo, sin tarea de bienvenida (decisión del dueño, 2026-10-23).
   encolarNotificacion(regId, 'email', 'bienvenida-v1', {});
-  encolarNotificacion(regId, 'whatsapp', 'bienvenida-v1', {});
   procesarNotificaciones();
 }
 
@@ -1447,11 +1470,17 @@ function revisarCarneConClaude(bytes, tipo, nombre, institucion) {
  * Inscritos: escribir la referencia a mano YA NO aprueba ni envía bienvenida (issue #20) —
  * queda marcado como edición fuera de procedimiento para que el operador use el menú
  * STORYCRAFTERS ▸ "Confirmar pago verificado", que sí deja auditoría.
+ * Atajo del operador (decisión del dueño, 2026-10-23): elegir "Confirmado" en "Estatus de Pago"
+ * confirma con el mismo núcleo que el menú (acreditarPago_). Solo si quien edita está en OPERADORES.
  */
 function alEditarHoja(e) {
   const hoja = e.range.getSheet();
   if (e.range.getRow() < 2) return;
   if (hoja.getName() === 'Inscritos') {
+    const ce = COL['Estatus de Pago'];
+    if (hoja.getLastColumn() >= ce && e.range.getColumn() <= ce && e.range.getLastColumn() >= ce) {
+      for (let fila = e.range.getRow(); fila <= e.range.getLastRow(); fila++) cambioEstatusAMano_(hoja, fila);
+    }
     const c = COL['Referencia de pago'];
     if (e.range.getColumn() > c || e.range.getLastColumn() < c) return;
     if (hoja.getLastColumn() < COL['Estatus de Pago']) return; // esquema viejo: migrar() primero
@@ -1469,6 +1498,61 @@ function alEditarHoja(e) {
   if (hoja.getName() !== 'Estudiantes') return;
   if (e.range.getColumn() > COL_EST['Estado'] || e.range.getLastColumn() < COL_EST['Estado']) return;
   for (let fila = e.range.getRow(); fila <= e.range.getLastRow(); fila++) procesarEstado(hoja, fila);
+}
+
+/**
+ * "Estatus de Pago" editado a mano. "Confirmado" (o "Completado") de un operador acredita el pago:
+ * método según la fila, monto de la tarifa, referencia MANUAL-<Registration ID> (única por registro).
+ * Cualquier otro cambio a mano se revierte: el estatus solo lo escribe el script.
+ */
+function cambioEstatusAMano_(hoja, fila) {
+  const ancho = Math.min(COLUMNAS.length, hoja.getLastColumn());
+  const v = hoja.getRange(fila, 1, 1, ancho).getValues()[0];
+  const get = function (col) { return v[COL[col] - 1]; };
+  const celda = hoja.getRange(fila, COL['Estatus de Pago']);
+  const nuevo = String(get('Estatus de Pago')).trim().toLowerCase();
+  const regId = String(get('Registration ID'));
+  const nota = function (txt) { hoja.getRange(fila, COL['Estado de gestión']).setValue(txt); };
+  if (String(get('Verificado por'))) { // ya acreditado por el script: no se deshace desde la celda
+    if (String(get('Estatus de Pago')) !== ESTATUS_PAGO.COMPLETADO) {
+      celda.setValue(ESTATUS_PAGO.COMPLETADO);
+      nota('Este pago ya estaba confirmado; para anularlo avisa al equipo');
+    }
+    return;
+  }
+  if (nuevo === ESTATUS_PAGO.PENDIENTE.toLowerCase() || !regId) return;
+  // "Pendiente" solo se escribe si NO se acredita: acreditarPago_ escribe "Completado" con otro
+  // objeto de hoja (openById) y Sheets no garantiza el orden entre ambos, así que un "Pendiente"
+  // escrito antes podía quedar encima del "Completado".
+  const rechazar = function (txt) { celda.setValue(ESTATUS_PAGO.PENDIENTE); if (txt) nota(txt); };
+  if (nuevo !== 'confirmado' && nuevo !== ESTATUS_PAGO.COMPLETADO.toLowerCase()) return rechazar('');
+  const operador = operadorAutorizado();
+  if (!operador) {
+    rechazar('No se confirmó: tu correo no está en la lista OPERADORES (o Google no lo mostró). Usa el menú STORYCRAFTERS.');
+    audit('confirmar-rechazado', regId, 'Confirmado escrito a mano por: ' + actorActual());
+    return;
+  }
+  const metodo = String(get('Método de pago')) === METODOS.TRANSFERENCIA ? METODOS.TRANSFERENCIA : METODOS.PAYPAL;
+  const t = TARIFAS[Object.keys(TARIFAS).filter(function (k) { return TARIFAS[k].nombre === get('Tarifa'); })[0]];
+  if (!t) return rechazar('No se confirmó: la fila no tiene una tarifa válida. Usa el menú STORYCRAFTERS.');
+  const r = acreditarPago_(fila, {
+    metodo: metodo,
+    referencia: 'MANUAL-' + regId,
+    monto: metodo === METODOS.TRANSFERENCIA ? t.hnl : t.usd,
+    moneda: metodo === METODOS.TRANSFERENCIA ? 'HNL' : 'USD',
+    registrationId: regId,
+  }, operador);
+  if (!r.ok) rechazar('No se confirmó: ' + r.error);
+}
+
+/** Desplegable Pendiente / Confirmado en "Estatus de Pago" (se vuelve a poner al abrir la hoja). */
+function ponerDesplegableEstatus_(ss) {
+  const hoja = ss.getSheetByName('Inscritos');
+  if (!hoja || hoja.getLastColumn() < COL['Estatus de Pago']) return;
+  const regla = SpreadsheetApp.newDataValidation()
+    .requireValueInList([ESTATUS_PAGO.PENDIENTE, 'Confirmado', ESTATUS_PAGO.COMPLETADO], true)
+    .setAllowInvalid(true).build();
+  hoja.getRange(2, COL['Estatus de Pago'], Math.max(hoja.getMaxRows() - 1, 1), 1).setDataValidation(regla);
 }
 
 function procesarEstado(hoja, fila) {
