@@ -50,7 +50,7 @@ test('preinscripcion rechaza si faltan campos o la tarifa está vencida', () => 
   assert.equal(res.ok, false);
   assert.equal(env.hoja('Inscritos').getLastRow(), 1);
 
-  env.setHoy('2026-11-10'); // Early Bird cerró el 5-nov
+  env.setHoy('2026-11-22'); // Early Bird cerró el 20-nov
   const res2 = env.json(env.ctx.preinscripcion({ accion: 'preinscripcion', tarifa: 'preventa', datos: DATOS }));
   assert.equal(res2.ok, false);
   assert.match(res2.error, /ya no está disponible/);
@@ -165,7 +165,7 @@ test('rechaza carné de tipo o tamaño inválido', () => {
 
 test('doGet marca disponible solo la tarifa vigente por fecha', () => {
   const env = crearEntorno();
-  env.setHoy('2026-11-10'); // dentro de Regular
+  env.setHoy('2026-11-22'); // dentro de Regular
   const res = env.json(env.ctx.doGet({ parameter: {} }));
   const porId = {};
   res.tarifas.forEach(function (t) { porId[t.id] = t.disponible; });
