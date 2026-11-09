@@ -26,8 +26,8 @@ const EVENTO = {
 // Los precios oficiales son en dólares (PayPal cobra en USD). hnl queda solo como referencia
 // interna para la hoja (columna "Precio (L)"), con la venta BCH del 15 oct 2026 (~27.03).
 const TARIFAS = {
-  preventa:   { nombre: 'Early Bird',    usd: 64, hnl: 1700, desde: '2026-01-01', hasta: '2026-11-05' },
-  regular:    { nombre: 'Regular',       usd: 72, hnl: 1900, desde: '2026-11-06', hasta: '2026-11-25' },
+  preventa:   { nombre: 'Early Bird',    usd: 64, hnl: 1700, desde: '2026-01-01', hasta: '2026-11-20' },
+  regular:    { nombre: 'Regular',       usd: 72, hnl: 1900, desde: '2026-11-21', hasta: '2026-11-25' },
   finales:    { nombre: 'Cupos finales', usd: 82, hnl: 2200, desde: '2026-11-26', hasta: '2026-12-08' },
   estudiante: { nombre: 'Estudiante',    usd: 64, hnl: 1700, desde: '2026-01-01', hasta: '2026-12-08', carne: true },
 };

@@ -27,7 +27,7 @@
   var CIERRE = '2026-12-08';
   var CERRADO = 'Las inscripciones cerraron el 8 de diciembre. Si quieres saber de próximas fechas, escríbenos por <a href="https://wa.me/50492520327" target="_blank" rel="noopener">WhatsApp</a> o a <a href="mailto:storycrafters@themediabuilders.com">storycrafters@themediabuilders.com</a>.';
   var TARIFAS = [
-    { id: 'preventa', nombre: 'Early Bird', usd: 64, hasta: '2026-11-05' },
+    { id: 'preventa', nombre: 'Early Bird', usd: 64, hasta: '2026-11-20' },
     { id: 'regular', nombre: 'Regular', usd: 72, hasta: '2026-11-25' },
     { id: 'finales', nombre: 'Cupos finales', usd: 82, hasta: '2026-12-08' },
   ];
