@@ -267,11 +267,30 @@
   // En un timeout se reintenta UNA vez con la misma clave de idempotencia: el servidor devuelve
   // el registro ya creado en vez de duplicarlo.
   var datosGuardados = false;
+
+  // Clave de idempotencia estable para la misma persona, así abrir el enlace otra vez o recargar
+  // la página no crea una segunda fila en la hoja (el servidor devuelve el registro ya creado):
+  // - enlace de estudiante: la clave sale del código (secreto y de un solo uso), en cualquier equipo;
+  // - formulario normal: se recuerda en este navegador por tarifa + correo + nombre durante 12 h.
+  var IDEM_TTL = 12 * 3600 * 1000;
+  function claveIdempotencia() {
+    if (codigo) return 'est-' + String(codigo).slice(0, 48);
+    var nueva = crypto.randomUUID ? crypto.randomUUID() : 'i' + Date.now() + '-' + Math.random().toString(36).slice(2);
+    var llave = 'sc-idem:' + tarifa.id + ':' + String(datos.correo || '').toLowerCase() + ':' +
+      String(datos.nombre || '').toLowerCase().replace(/\s+/g, ' ');
+    try {
+      var previa = JSON.parse(localStorage.getItem(llave) || 'null');
+      if (previa && previa.k && Date.now() - previa.t < IDEM_TTL) return previa.k;
+      localStorage.setItem(llave, JSON.stringify({ k: nueva, t: Date.now() }));
+    } catch (e) { /* sin almacenamiento: clave por envío, como antes */ }
+    return nueva;
+  }
+
   function preinscribir() {
     datosGuardados = false;
     regId = null;
     if (!API) return abrirVentanaPago();
-    if (!idem) idem = (crypto.randomUUID ? crypto.randomUUID() : 'i' + Date.now() + '-' + Math.random().toString(36).slice(2));
+    if (!idem) idem = claveIdempotencia();
     ocupado(true, 'Guardando tus datos…');
     var cuerpo = { accion: 'preinscripcion', tarifa: tarifa.id, datos: datos, codigo: codigo, idempotencia: idem };
     var espera = new Promise(function (ok) { setTimeout(function () { ok('timeout'); }, 20000); });
